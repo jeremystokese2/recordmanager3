@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'index' %}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'record_fields' record_type=record_type.name %}">{{ record_type.name }}</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Edit Core Field</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1 class="mb-4">Edit Core Field for {{ record_type.name }}</h1>
+    <form method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label for="field_name" class="form-label">Field Name</label>
+            <input type="text" class="form-control" id="field_name" value="{{ field.name }}" readonly>
+        </div>
+        <div class="mb-3">
+            <label for="display_name" class="form-label">Display Name</label>
+            <input type="text" class="form-control" id="display_name" name="display_name" value="{{ field.display_name }}" required>
+        </div>
+        <div class="mb-3">
+            <label for="field_type" class="form-label">Field Type</label>
+            <input type="text" class="form-control" id="field_type" value="{{ field.field_type }}" readonly>
+        </div>
+        <button type="submit" class="btn btn-primary">Update Core Field</button>
+    </form>
+</div>
+{% endblock %}

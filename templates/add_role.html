@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'index' %}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'record_fields' record_type=record_type.name %}">{{ record_type.name }}</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Add Role</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Add Role for {{ record_type }}</h2>
+    <form method="POST">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label for="name" class="form-label">Role Name*</label>
+            <input type="text" class="form-control" id="name" name="name" required>
+        </div>
+        <div class="mb-3">
+            <label for="display_name" class="form-label">Display Name*</label>
+            <input type="text" class="form-control" id="display_name" name="display_name" required>
+        </div>
+        <div class="mb-3">
+            <label for="description" class="form-label">Description</label>
+            <textarea class="form-control" id="description" name="description" 
+                      maxlength="300" placeholder="Supports basic markdown (bold, links, and lists)"></textarea>
+        </div>
+        <div class="mb-3">
+            <label for="stage" class="form-label">Stage*</label>
+            <select class="form-select" id="stage" name="stage" required>
+                {% for stage in stages %}
+                <option value="{{ stage.id }}">{{ stage.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="mb-3">
+            <label for="order" class="form-label">Display Order</label>
+            <input type="number" class="form-control" id="order" name="order" value="0">
+        </div>
+        <div class="mb-3 form-check">
+            <input type="checkbox" class="form-check-input" id="allow_multiple" name="allow_multiple">
+            <label class="form-check-label" for="allow_multiple">Allow Multiple Users</label>
+        </div>
+        <button type="submit" class="btn btn-primary">Add Role</button>
+    </form>
+</div>
+{% endblock %}

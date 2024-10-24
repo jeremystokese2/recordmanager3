@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'index' %}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'record_fields' record_type=record_type %}">{{ record_type }}</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Add New Custom Field</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Add Custom Field for {{ record_type }}</h2>
+    <form method="POST">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label for="field_name" class="form-label">Field Name*</label>
+            <input type="text" class="form-control" id="field_name" name="field_name" required>
+        </div>
+        <div class="mb-3">
+            <label for="display_name" class="form-label">Display Name*</label>
+            <input type="text" class="form-control" id="display_name" name="display_name" required>
+        </div>
+        <div class="mb-3">
+            <label for="field_type" class="form-label">Field Type*</label>
+            <select class="form-select" id="field_type" name="field_type" required>
+                {% for value, label in field_types %}
+                <option value="{{ value }}">{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="mb-3">
+            <label for="description" class="form-label">Description</label>
+            <textarea class="form-control" id="description" name="description" 
+                      maxlength="300" placeholder="Supports basic markdown (bold, links, and lists)"></textarea>
+        </div>
+        <div class="mb-3">
+            <label for="order" class="form-label">Display Order</label>
+            <input type="number" class="form-control" id="order" name="order" value="0">
+        </div>
+        <div class="mb-3 form-check">
+            <input type="checkbox" class="form-check-input" id="show_in_header" name="show_in_header">
+            <label class="form-check-label" for="show_in_header">Show in Header</label>
+        </div>
+        <div class="mb-3 form-check">
+            <input type="checkbox" class="form-check-input" id="is_mandatory" name="is_mandatory">
+            <label class="form-check-label" for="is_mandatory">Mandatory Field</label>
+        </div>
+        <div class="mb-3 form-check">
+            <input type="checkbox" class="form-check-input" id="visible_on_create" name="visible_on_create" checked>
+            <label class="form-check-label" for="visible_on_create">Visible on Creation</label>
+        </div>
+        <div class="mb-3 term-set-group" style="display: none;">
+            <label for="term_set" class="form-label">Term Set*</label>
+            <input type="text" class="form-control" id="term_set" name="term_set" 
+                   pattern="^[A-Za-z0-9\s]*$" title="Only alphanumeric characters and spaces allowed">
+        </div>
+        <button type="submit" class="btn btn-primary">Add Field</button>
+    </form>
+</div>
+
+<script>
+document.getElementById('field_type').addEventListener('change', function() {
+    const needsTermSet = ['dropdown_single', 'dropdown_multi', 'radio', 
+                         'combobox_single', 'combobox_multi'].includes(this.value);
+    document.querySelector('.term-set-group').style.display = needsTermSet ? 'block' : 'none';
+    document.getElementById('term_set').required = needsTermSet;
+});
+
+document.getElementById('is_mandatory').addEventListener('change', function() {
+    if (this.checked) {
+        document.getElementById('visible_on_create').checked = true;
+        document.getElementById('visible_on_create').disabled = true;
+    } else {
+        document.getElementById('visible_on_create').disabled = false;
+    }
+});
+</script>
+{% endblock %}

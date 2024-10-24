@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Record Types</h1>
+        <div>
+            <a href="{% url 'create_record_type' %}" class="btn btn-primary">Create New Record Type</a>
+            <form class="d-inline-block ms-3" method="get">
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="showDisabled" name="show_disabled" 
+                           {% if show_disabled %}checked{% endif %} onchange="this.form.submit()">
+                    <label class="form-check-label" for="showDisabled">Show Disabled</label>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% for category, record_types in categories.items %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h3 class="mb-0">{{ category }}</h3>
+            </div>
+            <div class="card-body">
+                <div class="list-group">
+                    {% for record_type in record_types %}
+                        <a href="{% url 'record_fields' record_type=record_type.name %}" 
+                           class="list-group-item list-group-item-action {% if not record_type.is_enabled %}text-muted{% endif %}">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h5 class="mb-1">{{ record_type.name }}</h5>
+                                    <small>{{ record_type.description }}</small>
+                                </div>
+                                <div>
+                                    <span class="badge bg-secondary me-2">Order: {{ record_type.order }}</span>
+                                    <span class="badge" style="background-color: {{ record_type.colour }}">{{ record_type.prefix }}</span>
+                                    {% if not record_type.is_enabled %}
+                                        <span class="badge bg-warning ms-2">Disabled</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+</div>
+{% endblock %}

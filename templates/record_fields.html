@@ -1,0 +1,250 @@
+{% extends "base.html" %}
+{% load custom_filters %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'index' %}">Home</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ record_type.name }}</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>{{ record_type.name }} Configuration</h2>
+        <div>
+            <a href="{% url 'edit_record_type' record_type=record_type.name %}" class="btn btn-secondary me-2">
+                Edit Record Type
+            </a>
+            <a href="{% url 'delete_record_type' record_type=record_type.name %}" class="btn btn-danger">
+                Delete Record Type
+            </a>
+        </div>
+    </div>
+
+    <!-- Record Type Details -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Record Type Details</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>Prefix:</strong> {{ record_type.prefix }}</p>
+                    <p><strong>Category:</strong> {{ record_type.category }}</p>
+                    <p><strong>Description:</strong> {{ record_type.description|default:"No description"|linebreaks }}</p>
+                </div>
+                <div class="col-md-6">
+                    <p>
+                        <strong>Colour:</strong> 
+                        <span class="d-inline-block align-middle" style="width: 20px; height: 20px; background-color: {{ record_type.colour }}; border: 1px solid #dee2e6;"></span>
+                        {{ record_type.colour }}
+                    </p>
+                    <p>
+                        <strong>Correspondence:</strong>
+                        {% if record_type.enable_correspondence %}
+                            Enabled {% if record_type.correspondence_mandatory %}(Mandatory){% endif %}
+                        {% else %}
+                            Disabled
+                        {% endif %}
+                    </p>
+                    <p>
+                        <strong>Status:</strong>
+                        {% if record_type.is_enabled %}
+                            <span class="badge bg-success">Enabled</span>
+                        {% else %}
+                            <span class="badge bg-danger">Disabled</span>
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stages -->
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Workflow Stages</h5>
+            <a href="{% url 'edit_stages' record_type=record_type.name %}" class="btn btn-primary btn-sm">
+                Edit Stages
+            </a>
+        </div>
+        <div class="card-body">
+            <div class="list-group">
+                {% for stage in stages %}
+                    <div class="list-group-item">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>{{ stage.name }}</span>
+                            <span class="badge bg-secondary">Order: {{ stage.order }}</span>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Core Fields -->
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Core Fields</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Display Name</th>
+                            <th>Type</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for field in core_fields %}
+                            <tr>
+                                <td>{{ field.name }}</td>
+                                <td>{{ field.display_name }}</td>
+                                <td>{{ field.field_type|capfirst }}</td>
+                                <td>
+                                    <a href="{% url 'edit_core_field' record_type=record_type.name field_name=field.name %}" 
+                                       class="btn btn-sm btn-outline-primary">Edit</a>
+                                </td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-muted">No core fields found.</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Fields -->
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Custom Fields</h5>
+            <a href="{% url 'new_custom_field' record_type=record_type.name %}" class="btn btn-primary btn-sm">
+                Add Field
+            </a>
+        </div>
+        <div class="card-body">
+            {% if custom_fields %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Display Name</th>
+                                <th>Type</th>
+                                <th>Description</th>
+                                <th>Properties</th>
+                                <th>Order</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for field in custom_fields %}
+                                <tr>
+                                    <td>{{ field.display_name }}</td>
+                                    <td>{{ field.get_field_type_display }}</td>
+                                    <td>
+                                        {% if field.description %}
+                                            <small class="text-muted">{{ field.description|linebreaks }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if field.show_in_header %}
+                                            <span class="badge bg-info">Header</span>
+                                        {% endif %}
+                                        {% if field.is_mandatory %}
+                                            <span class="badge bg-warning">Required</span>
+                                        {% endif %}
+                                        {% if not field.visible_on_create %}
+                                            <span class="badge bg-secondary">Hidden</span>
+                                        {% endif %}
+                                        {% if field.term_set %}
+                                            <span class="badge bg-primary">Term Set: {{ field.term_set }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ field.order }}</td>
+                                    <td>
+                                        <a href="{% url 'edit_custom_field' record_type=record_type.name field_name=field.name %}" 
+                                           class="btn btn-sm btn-outline-primary">Edit</a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="text-muted mb-0">No custom fields have been added yet.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Roles -->
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Roles</h5>
+            <a href="{% url 'add_role' record_type=record_type.name %}" class="btn btn-primary btn-sm">
+                Add Role
+            </a>
+        </div>
+        <div class="card-body">
+            {% for stage in stages %}
+                {% if stage.name != 'Closed' %}
+                    <div class="mb-4">
+                        <h6 class="border-bottom pb-2">{{ stage.name }}</h6>
+                        {% with stage_roles=roles_by_stage|get_item:stage %}
+                            {% if stage_roles %}
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>Display Name</th>
+                                                <th>Description</th>
+                                                <th>Properties</th>
+                                                <th>Order</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for role in stage_roles %}
+                                                <tr>
+                                                    <td>{{ role.display_name }}</td>
+                                                    <td>
+                                                        {% if role.description %}
+                                                            <small class="text-muted">{{ role.description|linebreaks }}</small>
+                                                        {% endif %}
+                                                    </td>
+                                                    <td>
+                                                        {% if role.allow_multiple %}
+                                                            <span class="badge bg-info">Multiple Users</span>
+                                                        {% else %}
+                                                            <span class="badge bg-warning">Single User</span>
+                                                        {% endif %}
+                                                    </td>
+                                                    <td>{{ role.order }}</td>
+                                                    <td>
+                                                        <a href="{% url 'edit_role' record_type.name role.id %}" 
+                                                           class="btn btn-sm btn-outline-primary">Edit</a>
+                                                    </td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% else %}
+                                <p class="text-muted">No roles assigned to this stage</p>
+                            {% endif %}
+                        {% endwith %}
+                    </div>
+                {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

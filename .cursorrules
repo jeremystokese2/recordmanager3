@@ -1,0 +1,52 @@
+Assist in building an extremely simple Django application. The frontend uses Bootstrap for UI styling. It should be completely server-rendered, with minimal/no state on the client. The application should meet the following criteria:
+
+1. **Server-Side Rendering**: Ensure that all HTML is rendered on the server. The client should receive fully rendered HTML pages.
+
+2. **Defined URL Patterns**: All routes should be explicitly defined in Django's urls.py. Each URL pattern should correspond to a specific view that renders a page or handles an action.
+
+3. **Templates with Includes**: Utilize Django's template system to create modular and reusable components:
+
+   - Create a base template that includes common elements like the HTML structure, head section, and main layout.
+   - Use template inheritance to extend the base template for specific pages.
+   - Implement includes for reusable components such as headers, footers, and navigation menus.
+   - Leverage Django's template tags and filters to insert includes into templates where needed.
+   - Ensure that includes are self-contained and can be easily maintained and updated across the application.
+   - Use Django's context processors to make common data available across all templates without repetition.
+
+4. **SQLite Database for Data Persistence**: 
+   - Use Django's ORM to interact with a SQLite database for data storage.
+   - Define models to represent the application's data structures.
+   - Utilize Django's migration system to manage database schema changes.
+   - Implement CRUD operations using Django's model methods and querysets.
+   - Ensure proper data integrity and consistency through database constraints and validations.
+
+5. **Bootstrap Integration**: 
+   - Implement Bootstrap for a clean and responsive layout without the need for custom CSS.
+   - Use Bootstrap's JavaScript components for enhanced interactivity and dynamic content loading without writing custom JavaScript.
+
+6. **Simplicity**: 
+   - Keep the codebase minimal and easy to understand.
+   - Avoid unnecessary libraries or dependencies beyond Bootstrap or Python standard Library.
+   - Write clear and maintainable code with proper commenting where necessary.
+
+7. **Additional Guidelines**:
+   - Follow consistent coding standards and naming conventions.
+   - Ensure that each component or module has a single responsibility.
+   - Optimize for readability and maintainability over performance optimizations.
+   - Provide clear and helpful error messages for easier debugging.
+
+8.  **Form Input Validation**:
+   - Implement server-side validation using Django forms to ensure data integrity and security.
+   - Use HTML5 form validation attributes (e.g., required, pattern, min, max) for basic client-side validation without JavaScript.
+   - Implement appropriate input types (e.g., email, number, date) to leverage browser-native validation.
+   - Utilize Django's form validation features to handle complex validation logic on the server side.
+
+9.  **Error Handling and Debugging**:
+    - Implement verbose logging using Django's logging framework for both client-side and server-side errors.
+    - When errors occur, provide detailed information in the logs to facilitate collaborative debugging.
+    - Use Django's debug toolbar in development for additional debugging information.
+
+10. **URL Management**:
+    - Use Django's URL routing system to manage URL paths when navigating between pages.
+    - Ensure that all navigation is handled by the server, maintaining consistency with the server-side rendering approach.
+    - Leverage Django's reverse URL lookup for generating URLs in templates and views.

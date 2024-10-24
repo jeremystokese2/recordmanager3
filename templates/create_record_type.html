@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'index' %}">Home</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Create Record Type</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Create Record Type</h2>
+    <form method="POST">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label for="record_type" class="form-label">Record Type Name*</label>
+            <input type="text" class="form-control" id="record_type" name="record_type" required>
+        </div>
+        <div class="mb-3">
+            <label for="prefix" class="form-label">Prefix* (max 4 characters)</label>
+            <input type="text" class="form-control" id="prefix" name="prefix" maxlength="4" required>
+        </div>
+        <div class="mb-3">
+            <label for="description" class="form-label">Description</label>
+            <textarea class="form-control" id="description" name="description" maxlength="250"></textarea>
+        </div>
+        <div class="mb-3">
+            <label for="category" class="form-label">Category*</label>
+            <input type="text" class="form-control" id="category" name="category" required 
+                   pattern="[A-Za-z\s]{1,50}" title="Only letters and spaces allowed, max 50 characters">
+        </div>
+        <div class="mb-3">
+            <label for="colour" class="form-label">Colour</label>
+            <input type="color" class="form-control form-control-color" id="colour" name="colour" value="#000000">
+        </div>
+        <div class="mb-3">
+            <label for="order" class="form-label">Display Order</label>
+            <input type="number" class="form-control" id="order" name="order" value="0">
+        </div>
+        <div class="mb-3 form-check">
+            <input type="checkbox" class="form-check-input" id="enable_correspondence" name="enable_correspondence">
+            <label class="form-check-label" for="enable_correspondence">Enable Correspondence</label>
+        </div>
+        <div class="mb-3 form-check correspondence-options" style="display: none;">
+            <input type="checkbox" class="form-check-input" id="correspondence_mandatory" name="correspondence_mandatory">
+            <label class="form-check-label" for="correspondence_mandatory">Correspondence Upload Mandatory</label>
+        </div>
+        <button type="submit" class="btn btn-primary">Create Record Type</button>
+    </form>
+</div>
+
+<script>
+document.getElementById('enable_correspondence').addEventListener('change', function() {
+    document.querySelector('.correspondence-options').style.display = 
+        this.checked ? 'block' : 'none';
+});
+</script>
+{% endblock %}

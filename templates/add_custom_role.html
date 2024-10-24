@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'index' %}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'record_fields' record_type=record_type.name %}">{{ record_type.name }}</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Add Custom Role</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1 class="mb-4">Add Custom Role for {{ record_type.name }}</h1>
+    <form method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label for="role_name" class="form-label">Role Name</label>
+            <input type="text" class="form-control" id="role_name" name="role_name" required>
+        </div>
+        <div class="mb-3">
+            <label for="stage" class="form-label">Assigned Stage</label>
+            <select class="form-select" id="stage" name="stage" required>
+                {% for stage in stages %}
+                    <option value="{{ stage }}">{{ stage }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <button type="submit" class="btn btn-primary">Add Role</button>
+    </form>
+</div>
+{% endblock %}
