@@ -191,3 +191,4 @@ ENV/
 # */migrations/*.py
 # */migrations/*.pyc
 # !*/migrations/__init__.py
+.cursorrules
