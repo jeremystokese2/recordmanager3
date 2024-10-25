@@ -13,7 +13,12 @@
 {% block content %}
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>{{ record_type.name }} Configuration</h2>
+        <h2>
+            {{ record_type.name }}
+            {% if record_type.prefix == 'HYB' %}
+                <img src="https://c.tenor.com/I5-8o6EJqkMAAAAd/tenor.gif" alt="Hybrid GIF" style="height: 40px; margin-left: 10px; vertical-align: middle;">
+            {% endif %}
+        </h2>
         <div>
             <a href="{% url 'edit_record_type' record_type=record_type.name %}" class="btn btn-secondary me-2">
                 Edit Record Type
