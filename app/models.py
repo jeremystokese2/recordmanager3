@@ -52,7 +52,7 @@ class CustomField(models.Model):
 
     record_type = models.ForeignKey(RecordType, on_delete=models.CASCADE, related_name='custom_fields')
     name = models.CharField(max_length=100)
-    display_name = models.CharField(max_length=100, default='')  # Added default
+    display_name = models.CharField(max_length=100, default='')
     field_type = models.CharField(max_length=20, choices=FIELD_TYPES)
     description = models.CharField(
         max_length=300, 
@@ -63,6 +63,7 @@ class CustomField(models.Model):
     show_in_header = models.BooleanField(default=False)
     is_mandatory = models.BooleanField(default=False)
     visible_on_create = models.BooleanField(default=True)
+    is_active = models.BooleanField(default=True)
     term_set = models.CharField(
         max_length=100,
         blank=True,
@@ -96,9 +97,12 @@ class Role(models.Model):
     record_type = models.ForeignKey(RecordType, on_delete=models.CASCADE)
     stage = models.ForeignKey(Stage, on_delete=models.CASCADE, related_name='roles')
     name = models.CharField(max_length=100)
-    display_name = models.CharField(max_length=100, default='')  # Added default empty string
-    description = models.CharField(max_length=250, blank=True)  # Already has blank=True
-    order = models.IntegerField(default=0)  # Already has default=0
+    display_name = models.CharField(max_length=100, default='')
+    description = models.CharField(max_length=250, blank=True)
+    order = models.IntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+    is_mandatory = models.BooleanField(default=False)  # Add this line
+    allow_multiple = models.BooleanField(default=False)  # Add this if missing
     
     class Meta:
         unique_together = ('record_type', 'stage', 'name')
@@ -120,3 +124,4 @@ class Field(models.Model):
     term_set_name = models.CharField(max_length=100)  # For dropdown/combo fields
     
     # Add any missing fields that you want to track
+

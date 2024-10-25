@@ -157,18 +157,20 @@ def create_record_type(request):
 def record_fields(request, record_type):
     record_type_obj = get_object_or_404(RecordType, name=record_type)
     stages = record_type_obj.stages.all().order_by('order')
+    show_inactive = request.GET.get('show_inactive') == 'on'
     
     # Group roles by stage
     roles_by_stage = {}
     for stage in stages:
-        roles_by_stage[stage] = stage.roles.all().order_by('name')  # Remove 'order' from ordering
+        roles_by_stage[stage] = stage.roles.all().order_by('name')
     
     return render(request, 'record_fields.html', {
         'record_type': record_type_obj,
         'custom_fields': record_type_obj.custom_fields.all(),
         'stages': stages,
         'core_fields': record_type_obj.core_fields.all(),
-        'roles_by_stage': roles_by_stage
+        'roles_by_stage': roles_by_stage,
+        'show_inactive': show_inactive
     })
 
 def new_custom_field(request, record_type):
@@ -239,6 +241,7 @@ def edit_custom_field(request, record_type, field_name):
             show_in_header = request.POST.get('show_in_header') == 'on'
             is_mandatory = request.POST.get('is_mandatory') == 'on'
             visible_on_create = request.POST.get('visible_on_create') == 'on'
+            is_active = request.POST.get('is_active') == 'on'  # Add this line
             term_set = request.POST.get('term_set', '').strip()
             
             try:
@@ -255,6 +258,7 @@ def edit_custom_field(request, record_type, field_name):
                     custom_field.show_in_header = show_in_header
                     custom_field.is_mandatory = is_mandatory
                     custom_field.visible_on_create = visible_on_create
+                    custom_field.is_active = is_active  # Add this line
                     custom_field.term_set = term_set
                     
                     custom_field.full_clean()  # Validate the field
@@ -440,7 +444,6 @@ def add_role(request, record_type):
 def edit_role(request, record_type, role_id):
     record_type_obj = get_object_or_404(RecordType, name=record_type)
     role = get_object_or_404(Role, id=role_id, record_type=record_type_obj)
-    # Exclude Closed stage from available stages
     stages = record_type_obj.stages.exclude(name='Closed')
     
     if request.method == 'POST':
@@ -452,6 +455,10 @@ def edit_role(request, record_type, role_id):
         display_name = request.POST.get('display_name')
         stage_id = request.POST.get('stage')
         order = request.POST.get('order', role.order)
+        description = request.POST.get('description', '')
+        is_active = request.POST.get('is_active') == 'on'
+        is_mandatory = request.POST.get('is_mandatory') == 'on'
+        allow_multiple = request.POST.get('allow_multiple') == 'on'
         
         try:
             order = int(order)
@@ -461,7 +468,6 @@ def edit_role(request, record_type, role_id):
         if display_name and stage_id:
             try:
                 stage = Stage.objects.get(id=stage_id, record_type=record_type_obj)
-                # Double check that we're not assigning to Closed stage
                 if stage.name == 'Closed':
                     messages.error(request, 'Roles cannot be assigned to the Closed stage.')
                     return render(request, 'edit_role.html', {
@@ -473,7 +479,12 @@ def edit_role(request, record_type, role_id):
                 role.display_name = display_name
                 role.stage = stage
                 role.order = order
+                role.description = description
+                role.is_active = is_active
+                role.is_mandatory = is_mandatory
+                role.allow_multiple = allow_multiple
                 role.save()
+                
                 messages.success(request, f'Role "{display_name}" updated successfully!')
                 return redirect('record_fields', record_type=record_type)
             except Stage.DoesNotExist:

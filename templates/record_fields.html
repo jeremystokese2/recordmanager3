@@ -12,18 +12,25 @@
 
 {% block content %}
 <div class="container mt-4">
+    <!-- Add toggle switch at the top -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1>Record Fields for {{ record_type }}</h1>
-        <div>
-            <a href="{% url 'new_custom_field' record_type=record_type.name %}" class="btn btn-primary me-2">
-                Add Field
-            </a>
-            <a href="{% url 'export_fields' record_type=record_type.name %}" class="btn btn-secondary me-2">
-                Export Fields
-            </a>
-            <a href="{% url 'export_record_types' %}?record_type={{ record_type.name }}" class="btn btn-secondary">
-                Export Record Type
-            </a>
+        <div class="d-flex align-items-center">
+            <div class="form-check form-switch me-3">
+                <input class="form-check-input" type="checkbox" id="show_inactive" {% if show_inactive %}checked{% endif %}>
+                <label class="form-check-label" for="show_inactive">Show Inactive</label>
+            </div>
+            <div>
+                <a href="{% url 'new_custom_field' record_type=record_type.name %}" class="btn btn-primary me-2">
+                    Add Field
+                </a>
+                <a href="{% url 'export_fields' record_type=record_type.name %}" class="btn btn-secondary me-2">
+                    Export Fields
+                </a>
+                <a href="{% url 'export_record_types' %}?record_type={{ record_type.name }}" class="btn btn-secondary">
+                    Export Record Type
+                </a>
+            </div>
         </div>
     </div>
 
@@ -80,7 +87,6 @@
                     <div class="list-group-item">
                         <div class="d-flex justify-content-between align-items-center">
                             <span>{{ stage.name }}</span>
-                            <span class="badge bg-secondary">Order: {{ stage.order }}</span>
                         </div>
                     </div>
                 {% endfor %}
@@ -150,34 +156,39 @@
                         </thead>
                         <tbody>
                             {% for field in custom_fields %}
-                                <tr>
-                                    <td>{{ field.display_name }}</td>
-                                    <td>{{ field.get_field_type_display }}</td>
-                                    <td>
-                                        {% if field.description %}
-                                            <small class="text-muted">{{ field.description|linebreaks }}</small>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        {% if field.show_in_header %}
-                                            <span class="badge bg-info">Header</span>
-                                        {% endif %}
-                                        {% if field.is_mandatory %}
-                                            <span class="badge bg-warning">Required</span>
-                                        {% endif %}
-                                        {% if not field.visible_on_create %}
-                                            <span class="badge bg-secondary">Hidden</span>
-                                        {% endif %}
-                                        {% if field.term_set %}
-                                            <span class="badge bg-primary">Term Set: {{ field.term_set }}</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>{{ field.order }}</td>
-                                    <td>
-                                        <a href="{% url 'edit_custom_field' record_type=record_type.name field_name=field.name %}" 
-                                           class="btn btn-sm btn-outline-primary">Edit</a>
-                                    </td>
-                                </tr>
+                                {% if show_inactive or field.is_active %}
+                                    <tr {% if not field.is_active %}class="table-secondary"{% endif %}>
+                                        <td>{{ field.display_name }}</td>
+                                        <td>{{ field.get_field_type_display }}</td>
+                                        <td>
+                                            {% if field.description %}
+                                                <small class="text-muted">{{ field.description|linebreaks }}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if not field.is_active %}
+                                                <span class="badge bg-secondary">Inactive</span>
+                                            {% endif %}
+                                            {% if field.show_in_header %}
+                                                <span class="badge bg-info">Header</span>
+                                            {% endif %}
+                                            {% if field.is_mandatory %}
+                                                <span class="badge bg-warning">Required</span>
+                                            {% endif %}
+                                            {% if not field.visible_on_create %}
+                                                <span class="badge bg-secondary">Hidden</span>
+                                            {% endif %}
+                                            {% if field.term_set %}
+                                                <span class="badge bg-primary">Term Set: {{ field.term_set }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ field.order }}</td>
+                                        <td>
+                                            <a href="{% url 'edit_custom_field' record_type=record_type.name field_name=field.name %}" 
+                                               class="btn btn-sm btn-outline-primary">Edit</a>
+                                        </td>
+                                    </tr>
+                                {% endif %}
                             {% endfor %}
                         </tbody>
                     </table>
@@ -216,26 +227,31 @@
                                         </thead>
                                         <tbody>
                                             {% for role in stage_roles %}
-                                                <tr>
-                                                    <td>{{ role.display_name }}</td>
-                                                    <td>
-                                                        {% if role.description %}
-                                                            <small class="text-muted">{{ role.description|linebreaks }}</small>
-                                                        {% endif %}
-                                                    </td>
-                                                    <td>
-                                                        {% if role.allow_multiple %}
-                                                            <span class="badge bg-info">Multiple Users</span>
-                                                        {% else %}
-                                                            <span class="badge bg-warning">Single User</span>
-                                                        {% endif %}
-                                                    </td>
-                                                    <td>{{ role.order }}</td>
-                                                    <td>
-                                                        <a href="{% url 'edit_role' record_type.name role.id %}" 
-                                                           class="btn btn-sm btn-outline-primary">Edit</a>
-                                                    </td>
-                                                </tr>
+                                                {% if show_inactive or role.is_active %}
+                                                    <tr {% if not role.is_active %}class="table-secondary"{% endif %}>
+                                                        <td>{{ role.display_name }}</td>
+                                                        <td>
+                                                            {% if role.description %}
+                                                                <small class="text-muted">{{ role.description|linebreaks }}</small>
+                                                            {% endif %}
+                                                        </td>
+                                                        <td>
+                                                            {% if not role.is_active %}
+                                                                <span class="badge bg-secondary">Inactive</span>
+                                                            {% endif %}
+                                                            {% if role.allow_multiple %}
+                                                                <span class="badge bg-info">Multiple Users</span>
+                                                            {% else %}
+                                                                <span class="badge bg-warning">Single User</span>
+                                                            {% endif %}
+                                                        </td>
+                                                        <td>{{ role.order }}</td>
+                                                        <td>
+                                                            <a href="{% url 'edit_role' record_type.name role.id %}" 
+                                                               class="btn btn-sm btn-outline-primary">Edit</a>
+                                                        </td>
+                                                    </tr>
+                                                {% endif %}
                                             {% endfor %}
                                         </tbody>
                                     </table>
@@ -257,4 +273,13 @@
     </a>
     {% endif %}
 </div>
+
+<!-- Add JavaScript to handle the toggle -->
+<script>
+document.getElementById('show_inactive').addEventListener('change', function() {
+    const url = new URL(window.location.href);
+    url.searchParams.set('show_inactive', this.checked ? 'on' : 'off');
+    window.location.href = url.toString();
+});
+</script>
 {% endblock %}
