@@ -33,4 +33,6 @@ urlpatterns = [
     path('record/<str:record_type>/roles/<int:role_id>/edit/', views.edit_role, name='edit_role'),
     # Put the catch-all record_type pattern last
     path('record/<str:record_type>/', views.record_fields, name='record_fields'),
+    path('export/record-types/', views.export_record_types, name='export_record_types'),
+    path('record-type/<str:record_type>/export-fields/', views.export_fields, name='export_fields'),
 ]

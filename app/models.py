@@ -93,21 +93,30 @@ class CustomField(models.Model):
         return f"{self.record_type.name} - {self.display_name}"
 
 class Role(models.Model):
-    record_type = models.ForeignKey(RecordType, on_delete=models.CASCADE, related_name='roles')
+    record_type = models.ForeignKey(RecordType, on_delete=models.CASCADE)
+    stage = models.ForeignKey(Stage, on_delete=models.CASCADE, related_name='roles')
     name = models.CharField(max_length=100)
-    display_name = models.CharField(max_length=100)
-    description = models.CharField(
-        max_length=300,
-        blank=True,
-        validators=[MaxLengthValidator(300)]
-    )
-    stage = models.ForeignKey('Stage', on_delete=models.CASCADE, related_name='roles')
-    order = models.IntegerField(default=0)
-    allow_multiple = models.BooleanField(default=False)  # Changed from is_core
-
+    display_name = models.CharField(max_length=100, default='')  # Added default empty string
+    description = models.CharField(max_length=250, blank=True)  # Already has blank=True
+    order = models.IntegerField(default=0)  # Already has default=0
+    
     class Meta:
+        unique_together = ('record_type', 'stage', 'name')
         ordering = ['order', 'name']
-        unique_together = ['record_type', 'name']
-
+    
+    def save(self, *args, **kwargs):
+        # If display_name is empty, use name
+        if not self.display_name:
+            self.display_name = self.name
+        super().save(*args, **kwargs)
+    
     def __str__(self):
-        return f"{self.record_type.name} - {self.display_name}"
+        return f"{self.name} - {self.stage.name} - {self.record_type.name}"
+
+class Field(models.Model):
+    # Existing fields...
+    is_active = models.BooleanField(default=True)
+    stage = models.CharField(max_length=100)  # For role fields
+    term_set_name = models.CharField(max_length=100)  # For dropdown/combo fields
+    
+    # Add any missing fields that you want to track

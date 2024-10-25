@@ -2,8 +2,18 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.db import IntegrityError
 from django.core.exceptions import ValidationError  # Add this import
+from django.http import FileResponse
+import os
 from .models import RecordType, Stage, CoreField, CustomField, Role
 import re
+from . import export
+from django.contrib.auth.decorators import login_required, user_passes_test
+import tempfile
+import shutil
+from django.http import JsonResponse
+import json
+from django.http import HttpResponse
+from .export import export_record_fields
 
 def index(request):
     show_disabled = request.GET.get('show_disabled') == 'on'
@@ -151,7 +161,7 @@ def record_fields(request, record_type):
     # Group roles by stage
     roles_by_stage = {}
     for stage in stages:
-        roles_by_stage[stage] = stage.roles.all().order_by('order', 'name')
+        roles_by_stage[stage] = stage.roles.all().order_by('name')  # Remove 'order' from ordering
     
     return render(request, 'record_fields.html', {
         'record_type': record_type_obj,
@@ -211,35 +221,57 @@ def new_custom_field(request, record_type):
     })
 
 def edit_custom_field(request, record_type, field_name):
-    custom_fields = request.session.get('custom_fields', {}).get(record_type, [])
-    field = next((f for f in custom_fields if f['name'] == field_name), None)
-    
-    if field is None:
-        messages.error(request, f'Field "{field_name}" not found.')
-        return redirect('record_fields', record_type=record_type)
+    record_type_obj = get_object_or_404(RecordType, name=record_type)
+    custom_field = get_object_or_404(CustomField, record_type=record_type_obj, name=field_name)
     
     if request.method == 'POST':
         if 'delete' in request.POST:
             # Delete the field
-            custom_fields = [f for f in custom_fields if f['name'] != field_name]
-            request.session['custom_fields'][record_type] = custom_fields
-            request.session.modified = True
+            custom_field.delete()
             messages.success(request, f'Field "{field_name}" deleted successfully.')
             return redirect('record_fields', record_type=record_type)
         else:
             # Update the field
-            new_field_name = request.POST.get('field_name')
-            new_field_type = request.POST.get('field_type')
-            if new_field_name and new_field_type:
-                field['name'] = new_field_name
-                field['type'] = new_field_type
-                request.session.modified = True
-                messages.success(request, f'Field "{field_name}" updated successfully.')
-                return redirect('record_fields', record_type=record_type)
+            display_name = request.POST.get('display_name')
+            field_type = request.POST.get('field_type')
+            description = request.POST.get('description', '')
+            order = request.POST.get('order', custom_field.order)
+            show_in_header = request.POST.get('show_in_header') == 'on'
+            is_mandatory = request.POST.get('is_mandatory') == 'on'
+            visible_on_create = request.POST.get('visible_on_create') == 'on'
+            term_set = request.POST.get('term_set', '').strip()
+            
+            try:
+                order = int(order)
+            except (ValueError, TypeError):
+                order = custom_field.order
+
+            if display_name and field_type:
+                try:
+                    custom_field.display_name = display_name
+                    custom_field.field_type = field_type
+                    custom_field.description = description
+                    custom_field.order = order
+                    custom_field.show_in_header = show_in_header
+                    custom_field.is_mandatory = is_mandatory
+                    custom_field.visible_on_create = visible_on_create
+                    custom_field.term_set = term_set
+                    
+                    custom_field.full_clean()  # Validate the field
+                    custom_field.save()
+                    
+                    messages.success(request, f'Field "{field_name}" updated successfully.')
+                    return redirect('record_fields', record_type=record_type)
+                except ValidationError as e:
+                    messages.error(request, '; '.join(e.messages))
             else:
                 messages.error(request, 'Please enter valid field details.')
     
-    return render(request, 'edit_custom_field.html', {'record_type': record_type, 'field': field})
+    return render(request, 'edit_custom_field.html', {
+        'record_type': record_type,
+        'field': custom_field,
+        'field_types': CustomField.FIELD_TYPES
+    })
 
 def edit_record_type(request, record_type):
     record_type_obj = get_object_or_404(RecordType, name=record_type)
@@ -281,43 +313,50 @@ def edit_record_type(request, record_type):
     return render(request, 'edit_record_type.html', {'record_type': record_type_obj})
 
 def edit_stages(request, record_type):
+    # Get the record type object by name instead of id
     record_type_obj = get_object_or_404(RecordType, name=record_type)
-    stages = record_type_obj.stages.all().order_by('order')
+    error_message = None
     
     if request.method == 'POST':
-        new_stages = request.POST.getlist('stages')
-        if len(new_stages) >= 2 and new_stages[0] == 'Initiate' and new_stages[-1] == 'Closed':
-            # Validate stage names
-            stage_pattern = re.compile(r'^[A-Za-z\s]{1,50}$')
-            if all(stage_pattern.match(stage) for stage in new_stages):
-                # Check if any deleted stage has assigned roles
-                deleted_stages = set(stages.values_list('name', flat=True)) - set(new_stages)
-                affected_stages = {}
-                
-                for stage in deleted_stages:
-                    core_roles = CoreRole.objects.filter(record_type=record_type_obj, stage__name=stage)
-                    custom_roles = CustomRole.objects.filter(record_type=record_type_obj, stage__name=stage)
-                    if core_roles.exists() or custom_roles.exists():
-                        affected_stages[stage] = list(core_roles.values_list('name', flat=True)) + list(custom_roles.values_list('name', flat=True))
-                
-                if affected_stages:
-                    error_message = "Cannot delete the following stages due to assigned roles:\n"
-                    for stage, roles in affected_stages.items():
-                        error_message += f"- {stage}: {', '.join(roles)}\n"
-                    messages.error(request, error_message)
-                else:
-                    # Update stages
-                    Stage.objects.filter(record_type=record_type_obj).delete()
-                    for i, stage_name in enumerate(new_stages):
-                        Stage.objects.create(record_type=record_type_obj, name=stage_name, order=i)
-                    messages.success(request, 'Stages updated successfully.')
-                    return redirect('record_fields', record_type=record_type)
-            else:
-                messages.error(request, 'Invalid stage name. Use only alphabetical characters and spaces, maximum 50 characters.')
-        else:
-            messages.error(request, 'Invalid stages. Ensure "Initiate" is first and "Closed" is last.')
+        # Get the stages data from the form
+        new_stages_data = request.POST.getlist('stages')
+        existing_stages = list(Stage.objects.filter(record_type=record_type_obj).order_by('order'))
+        
+        # If number of stages has changed, check for roles on stages that would be deleted
+        if len(new_stages_data) < len(existing_stages):
+            for stage in existing_stages:
+                if stage.name not in new_stages_data and stage.roles.exists():
+                    error_message = f'Cannot delete stage "{stage.name}" because it has roles assigned to it. Please delete the roles first.'
+                    break
+        
+        if not error_message:
+            # Update existing stages
+            for index, (stage, new_name) in enumerate(zip(existing_stages, new_stages_data)):
+                if stage.name != new_name.strip():
+                    stage.name = new_name.strip()
+                if stage.order != index:
+                    stage.order = index
+                stage.save()
+            
+            # Add any new stages
+            for index, new_name in enumerate(new_stages_data[len(existing_stages):], start=len(existing_stages)):
+                if new_name.strip():
+                    Stage.objects.create(
+                        record_type=record_type_obj,
+                        name=new_name.strip(),
+                        order=index
+                    )
+            
+            messages.success(request, 'Stages updated successfully!')
+            return redirect('record_fields', record_type=record_type)
     
-    return render(request, 'edit_stages.html', {'record_type': record_type_obj, 'stages': stages})
+    # For GET requests or if there was an error, render the template with stages
+    stages = Stage.objects.filter(record_type=record_type_obj).order_by('order')
+    return render(request, 'edit_stages.html', {
+        'record_type': record_type_obj,
+        'stages': stages,
+        'error_message': error_message
+    })
 
 def edit_core_field(request, record_type, field_name):
     record_type_obj = get_object_or_404(RecordType, name=record_type)
@@ -447,4 +486,59 @@ def edit_role(request, record_type, role_id):
         'role': role,
         'stages': stages
     })
+
+def export_record_types(request):
+    """View to handle record type export"""
+    # If coming from record_fields page, get the single record type
+    single_record_type = request.GET.get('record_type')
+    if single_record_type:
+        selected_types = [single_record_type]
+    else:
+        # Otherwise get selected types from the home page
+        selected_types = request.GET.getlist('types[]')
+    
+    # Create a temporary file
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.json') as tmp_file:
+        filename = tmp_file.name
+        
+        # Generate the export data with selected types
+        export_data = export.export_record_types(selected_types if selected_types else None)
+        
+        # Copy the export data to the temporary file
+        shutil.copy2(export_data, filename)
+        
+        # Delete the original export file
+        os.remove(export_data)
+        
+        # Create the response with the temporary file
+        response = FileResponse(
+            open(filename, 'rb'),
+            content_type='application/json',
+            as_attachment=True,
+            filename='record_types_export.json'
+        )
+        
+        # Schedule the temporary file for deletion after the response is sent
+        response._resource_closers.append(lambda: os.remove(filename))
+        
+        return response
+
+def export_fields(request, record_type):
+    """Export record fields as JSON"""
+    record_type_obj = get_object_or_404(RecordType, name=record_type)
+    fields = CustomField.objects.filter(record_type=record_type_obj)
+    roles = Role.objects.filter(record_type=record_type_obj)
+    core_fields = CoreField.objects.filter(record_type=record_type_obj)
+    
+    # Combine all fields for export
+    export_data = export_record_fields(record_type_obj, fields, roles, core_fields)  # Pass record_type_obj instead of just record_type
+    
+    # Convert to JSON
+    json_data = json.dumps(export_data, indent=2)
+    
+    # Create the response
+    response = HttpResponse(json_data, content_type='application/json')
+    response['Content-Disposition'] = f'attachment; filename="{record_type.lower().replace(" ", "_")}_fields.json"'
+    
+    return response
 

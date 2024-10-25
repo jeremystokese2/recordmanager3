@@ -13,6 +13,23 @@
 {% block content %}
 <div class="container mt-5">
     <h1 class="mb-4">Edit Stages for {{ record_type.name }}</h1>
+    
+    {% if error_message %}
+    <div class="alert alert-danger" role="alert">
+        {{ error_message }}
+    </div>
+    {% endif %}
+    
+    {% if messages %}
+    <div class="messages">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}" role="alert">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
     <form method="post" id="stagesForm">
         {% csrf_token %}
         <ul class="list-group mb-3" id="stagesList">

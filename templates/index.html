@@ -1,49 +1,113 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container mt-5">
+<div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1>Record Types</h1>
         <div>
-            <a href="{% url 'create_record_type' %}" class="btn btn-primary">Create New Record Type</a>
-            <form class="d-inline-block ms-3" method="get">
-                <div class="form-check form-switch">
-                    <input class="form-check-input" type="checkbox" id="showDisabled" name="show_disabled" 
-                           {% if show_disabled %}checked{% endif %} onchange="this.form.submit()">
-                    <label class="form-check-label" for="showDisabled">Show Disabled</label>
-                </div>
+            <form id="exportForm" action="{% url 'export_record_types' %}" method="get" class="d-inline">
+                <button type="submit" class="btn btn-secondary" id="exportButton" disabled>
+                    Export Selected
+                </button>
             </form>
+            <a href="{% url 'create_record_type' %}" class="btn btn-primary">Create Record Type</a>
         </div>
     </div>
 
+    <div class="form-check mb-3">
+        <input class="form-check-input" type="checkbox" id="selectAll">
+        <label class="form-check-label" for="selectAll">
+            Select All
+        </label>
+    </div>
+
     {% for category, record_types in categories.items %}
-        <div class="card mb-4">
-            <div class="card-header">
-                <h3 class="mb-0">{{ category }}</h3>
-            </div>
-            <div class="card-body">
-                <div class="list-group">
-                    {% for record_type in record_types %}
-                        <a href="{% url 'record_fields' record_type=record_type.name %}" 
-                           class="list-group-item list-group-item-action {% if not record_type.is_enabled %}text-muted{% endif %}">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <h5 class="mb-1">{{ record_type.name }}</h5>
-                                    <small>{{ record_type.description }}</small>
-                                </div>
-                                <div>
-                                    <span class="badge bg-secondary me-2">Order: {{ record_type.order }}</span>
-                                    <span class="badge" style="background-color: {{ record_type.colour }}">{{ record_type.prefix }}</span>
-                                    {% if not record_type.is_enabled %}
-                                        <span class="badge bg-warning ms-2">Disabled</span>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        </a>
-                    {% endfor %}
-                </div>
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">{{ category }}</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th style="width: 40px;"></th>
+                            <th>Name</th>
+                            <th>Prefix</th>
+                            <th>Description</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for record_type in record_types %}
+                        <tr>
+                            <td>
+                                <input type="checkbox" class="form-check-input record-type-checkbox" 
+                                       name="types[]" value="{{ record_type.name }}"
+                                       form="exportForm">
+                            </td>
+                            <td>
+                                <a href="{% url 'record_fields' record_type=record_type.name %}">
+                                    {{ record_type.name }}
+                                </a>
+                            </td>
+                            <td>{{ record_type.prefix }}</td>
+                            <td>{{ record_type.description|truncatechars:50 }}</td>
+                            <td>
+                                {% if record_type.is_enabled %}
+                                <span class="badge bg-success">Enabled</span>
+                                {% else %}
+                                <span class="badge bg-danger">Disabled</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{% url 'edit_record_type' record_type=record_type.name %}" 
+                                   class="btn btn-sm btn-outline-primary">Edit</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
+    </div>
+    {% empty %}
+    <p class="text-muted">No record types found.</p>
     {% endfor %}
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const selectAllCheckbox = document.getElementById('selectAll');
+    const recordTypeCheckboxes = document.querySelectorAll('.record-type-checkbox');
+    const exportButton = document.getElementById('exportButton');
+
+    // Handle "Select All" checkbox
+    selectAllCheckbox.addEventListener('change', function() {
+        recordTypeCheckboxes.forEach(checkbox => {
+            checkbox.checked = this.checked;
+        });
+        updateExportButton();
+    });
+
+    // Handle individual checkboxes
+    recordTypeCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            updateExportButton();
+            // Update "Select All" if needed
+            selectAllCheckbox.checked = Array.from(recordTypeCheckboxes)
+                .every(cb => cb.checked);
+        });
+    });
+
+    // Update export button state
+    function updateExportButton() {
+        const checkedCount = Array.from(recordTypeCheckboxes)
+            .filter(cb => cb.checked).length;
+        exportButton.disabled = checkedCount === 0;
+        exportButton.textContent = `Export Selected (${checkedCount})`;
+    }
+});
+</script>
 {% endblock %}
