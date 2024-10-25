@@ -27,7 +27,7 @@ SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', get_random_secret_key())
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['recordmanager3-production.up.railway.app']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'recordmanager3-production.up.railway.app']
 CSRF_TRUSTED_ORIGINS  = ['https://recordmanager3-production.up.railway.app']
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
@@ -40,7 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'app.apps.AppConfig',  # Add this line
+    'app.apps.AppConfig',  # Ensure your app is included
 ]
 
 MIDDLEWARE = [
