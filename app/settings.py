@@ -78,7 +78,7 @@ WSGI_APPLICATION = 'app.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(os.getenv('RAILWAY_VOLUME_MOUNT_PATH', BASE_DIR), 'db.sqlite3'),
+        'NAME': os.path.join(os.getenv('RAILWAY_VOLUME_MOUNT_PATH', str(BASE_DIR)), 'db.sqlite3'),
     }
 }
 
