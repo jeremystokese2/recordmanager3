@@ -14,9 +14,19 @@
 <div class="container mt-5">
     <h1 class="mb-4">Edit Stages for {{ record_type.name }}</h1>
     
-    {% if error_message %}
+    {% if error_data %}
     <div class="alert alert-danger" role="alert">
-        {{ error_message }}
+        <p>Cannot delete stage "{{ error_data.stage.name }}" because it has the following roles assigned to it:</p>
+        <ul>
+            {% for role in error_data.roles %}
+                <li>
+                    <a href="{% url 'edit_role' record_type=record_type.name role_id=role.id %}">
+                        {{ role.display_name }}
+                    </a>
+                </li>
+            {% endfor %}
+        </ul>
+        <p>Please delete these roles first before removing this stage.</p>
     </div>
     {% endif %}
     

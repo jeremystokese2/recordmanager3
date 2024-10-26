@@ -317,12 +317,10 @@ def edit_record_type(request, record_type):
     return render(request, 'edit_record_type.html', {'record_type': record_type_obj})
 
 def edit_stages(request, record_type):
-    # Get the record type object by name instead of id
     record_type_obj = get_object_or_404(RecordType, name=record_type)
-    error_message = None
+    error_data = None  # Changed from error_message
     
     if request.method == 'POST':
-        # Get the stages data from the form
         new_stages_data = request.POST.getlist('stages')
         existing_stages = list(Stage.objects.filter(record_type=record_type_obj).order_by('order'))
         
@@ -330,10 +328,15 @@ def edit_stages(request, record_type):
         if len(new_stages_data) < len(existing_stages):
             for stage in existing_stages:
                 if stage.name not in new_stages_data and stage.roles.exists():
-                    error_message = f'Cannot delete stage "{stage.name}" because it has roles assigned to it. Please delete the roles first.'
+                    # Get all roles for this stage
+                    roles = stage.roles.all()
+                    error_data = {
+                        'stage': stage,
+                        'roles': roles
+                    }
                     break
         
-        if not error_message:
+        if not error_data:
             # Update existing stages
             for index, (stage, new_name) in enumerate(zip(existing_stages, new_stages_data)):
                 if stage.name != new_name.strip():
@@ -354,12 +357,11 @@ def edit_stages(request, record_type):
             messages.success(request, 'Stages updated successfully!')
             return redirect('record_fields', record_type=record_type)
     
-    # For GET requests or if there was an error, render the template with stages
     stages = Stage.objects.filter(record_type=record_type_obj).order_by('order')
     return render(request, 'edit_stages.html', {
         'record_type': record_type_obj,
         'stages': stages,
-        'error_message': error_message
+        'error_data': error_data
     })
 
 def edit_core_field(request, record_type, field_name):
