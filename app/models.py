@@ -38,6 +38,7 @@ class CoreField(models.Model):
     description = models.CharField(
         max_length=300, 
         blank=True,
+        null=True,  # Add this to handle existing records
         validators=[MaxLengthValidator(300)]
     )
 
