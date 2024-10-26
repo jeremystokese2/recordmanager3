@@ -35,6 +35,11 @@ class CoreField(models.Model):
     name = models.CharField(max_length=100)
     display_name = models.CharField(max_length=100)
     field_type = models.CharField(max_length=20)
+    description = models.CharField(
+        max_length=300, 
+        blank=True,
+        validators=[MaxLengthValidator(300)]
+    )
 
 class CustomField(models.Model):
     FIELD_TYPES = [
