@@ -1,6 +1,6 @@
 # Django Record Management System
 
-This is a simple Django application for managing records, built with server-side rendering and Bootstrap for UI styling.
+This is a simple Django application for managing record configs, built with server-side rendering and Bootstrap for UI styling.
 
 ## Features
 

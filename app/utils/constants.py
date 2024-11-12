@@ -50,7 +50,6 @@ VALID_WIZARD_POSITIONS = {0, 1}
 # Ignored Fields
 IGNORED_STATE_FIELDS = {
     'ABCAssignedTo', 'ABCAutoResponseTemplates', 'ABCCancelled', 'ABCClosedDate',
-    # ... rest of the ignored state fields
 }
 
 IGNORED_SP_FIELDS = {
