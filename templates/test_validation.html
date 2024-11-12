@@ -47,11 +47,12 @@
                 <div class="card-body" id="typesSection">
                     {% for result in record_type_results %}
                         <div class="mb-3">
-                            <div class="d-flex justify-content-between align-items-center" 
+                            <div class="d-flex justify-content-between align-items-center clickable-header p-2 rounded" 
                                  data-bs-toggle="collapse" 
                                  data-bs-target="#type{{ forloop.counter }}" 
-                                 style="cursor: pointer;">
+                                 aria-expanded="false">
                                 <div class="d-flex align-items-center gap-3">
+                                    <i class="bi bi-caret-right-fill caret-toggle"></i>
                                     <h5 class="mb-0">{{ result.record }}</h5>
                                     {% if result.is_active is not None %}
                                         <span class="badge {% if result.is_active %}bg-success{% else %}bg-secondary{% endif %}">
@@ -127,11 +128,14 @@
                     {% regroup field_results by partition_key as grouped_fields %}
                     {% for group in grouped_fields %}
                         <div class="mb-4">
-                            <div class="d-flex justify-content-between align-items-center mb-2" 
+                            <div class="d-flex justify-content-between align-items-center clickable-header p-2 rounded mb-2" 
                                  data-bs-toggle="collapse" 
                                  data-bs-target="#group{{ forloop.counter }}"
-                                 style="cursor: pointer;">
-                                <h5 class="mb-0">{{ group.grouper }}</h5>
+                                 aria-expanded="true">
+                                <div class="d-flex align-items-center gap-3">
+                                    <i class="bi bi-caret-right-fill caret-toggle"></i>
+                                    <h5 class="mb-0">{{ group.grouper }}</h5>
+                                </div>
                                 <!-- Add group stats -->
                                 {% with group_stats=group.list|get_validation_stats %}
                                     <div class="d-flex gap-2">
@@ -146,11 +150,12 @@
                             <div class="collapse show" id="group{{ forloop.counter }}">
                                 {% for result in group.list %}
                                     <div class="mb-3">
-                                        <div class="d-flex justify-content-between align-items-center"
+                                        <div class="d-flex justify-content-between align-items-center clickable-header p-2 rounded"
                                              data-bs-toggle="collapse"
                                              data-bs-target="#field{{ forloop.parentloop.counter }}{{ forloop.counter }}"
-                                             style="cursor: pointer;">
+                                             aria-expanded="false">
                                             <div class="d-flex align-items-center gap-3">
+                                                <i class="bi bi-caret-right-fill caret-toggle"></i>
                                                 <h6 class="mb-0">{{ result.record }}</h6>
                                                 {% if result.is_active is not None %}
                                                     <span class="badge {% if result.is_active %}bg-success{% else %}bg-secondary{% endif %}">
@@ -210,6 +215,30 @@
     {% endif %}
 </div>
 
+<style>
+.caret-toggle {
+    width: 20px;
+    height: 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s;
+}
+
+.caret-toggle.collapsed {
+    transform: rotate(-90deg);
+}
+
+.clickable-header {
+    cursor: pointer;
+    user-select: none;
+}
+
+.clickable-header:hover {
+    background-color: rgba(0,0,0,0.03);
+}
+</style>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const hideInactiveTypesToggle = document.getElementById('hideInactiveTypesToggle');
@@ -223,6 +252,20 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initial hide of inactive records since toggles default to checked
     toggleInactiveRecords('types');
     toggleFieldVisibility();
+    
+    // Initialize all carets
+    updateCarets();
+    
+    // Add collapse event listeners
+    document.querySelectorAll('[data-bs-toggle="collapse"]').forEach(element => {
+        element.addEventListener('shown.bs.collapse', function() {
+            updateCaret(this, false);
+        });
+        
+        element.addEventListener('hidden.bs.collapse', function() {
+            updateCaret(this, true);
+        });
+    });
 });
 
 function toggleFieldVisibility() {
@@ -306,6 +349,9 @@ function toggleAllTypes() {
             collapse.classList.remove('show');
         }
     });
+    
+    // Update all carets
+    updateCarets();
 }
 
 function toggleFieldGroup(groupId) {
@@ -331,6 +377,30 @@ function toggleAllFields() {
             collapse.classList.remove('show');
         }
     });
+    
+    // Update all carets
+    updateCarets();
+}
+
+function updateCarets() {
+    document.querySelectorAll('[data-bs-toggle="collapse"]').forEach(element => {
+        const targetId = element.getAttribute('data-bs-target');
+        const target = document.querySelector(targetId);
+        if (target) {
+            updateCaret(element, !target.classList.contains('show'));
+        }
+    });
+}
+
+function updateCaret(element, collapsed) {
+    const caret = element.querySelector('.caret-toggle');
+    if (caret) {
+        if (collapsed) {
+            caret.classList.add('collapsed');
+        } else {
+            caret.classList.remove('collapsed');
+        }
+    }
 }
 </script>
 {% endblock %} 

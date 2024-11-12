@@ -32,7 +32,7 @@ def validate_record_type(record_type_obj):
     
     try:
         # Check IsActive status first
-        is_active = getattr(record_type_obj, 'is_enabled', True)  # Default to True if not set
+        is_active = record_type_obj.get('is_enabled', True)
         if not is_active:
             return [{
                 'field': 'IsActive',
@@ -41,7 +41,8 @@ def validate_record_type(record_type_obj):
             }]
         
         # Name validation
-        if not record_type_obj.name:
+        name = record_type_obj.get('name')
+        if not name:
             validation_results.append({
                 'field': 'Name',
                 'status': 'FAILED',
@@ -55,22 +56,23 @@ def validate_record_type(record_type_obj):
             })
             
         # Prefix validation
+        prefix = record_type_obj.get('prefix')
         prefix_valid = True
-        if not record_type_obj.prefix:
+        if not prefix:
             validation_results.append({
                 'field': 'Prefix',
                 'status': 'FAILED',
                 'message': "Prefix is required"
             })
             prefix_valid = False
-        if record_type_obj.prefix and len(record_type_obj.prefix) > 4:
+        if prefix and len(prefix) > 4:
             validation_results.append({
                 'field': 'Prefix',
                 'status': 'FAILED',
                 'message': "Prefix must be 4 characters or less"
             })
             prefix_valid = False
-        if prefix_valid and record_type_obj.prefix:
+        if prefix_valid and prefix:
             validation_results.append({
                 'field': 'Prefix',
                 'status': 'SUCCESS',
@@ -78,28 +80,29 @@ def validate_record_type(record_type_obj):
             })
             
         # Description validation
-        if hasattr(record_type_obj, 'description'):
-            if len(record_type_obj.description) > 250:
-                validation_results.append({
-                    'field': 'Description',
-                    'status': 'FAILED',
-                    'message': "Description must be 250 characters or less"
-                })
-            else:
-                validation_results.append({
-                    'field': 'Description',
-                    'status': 'SUCCESS',
-                    'message': "Description length is valid"
-                })
+        description = record_type_obj.get('description', '')
+        if len(description) > 250:
+            validation_results.append({
+                'field': 'Description',
+                'status': 'FAILED',
+                'message': "Description must be 250 characters or less"
+            })
+        else:
+            validation_results.append({
+                'field': 'Description',
+                'status': 'SUCCESS',
+                'message': "Description length is valid"
+            })
             
         # Category validation
-        if not record_type_obj.category:
+        category = record_type_obj.get('category')
+        if not category:
             validation_results.append({
                 'field': 'Category',
                 'status': 'FAILED',
                 'message': "Category is required"
             })
-        elif not re.match(r'^[A-Za-z\s]{1,50}$', record_type_obj.category):
+        elif not re.match(r'^[A-Za-z\s]{1,50}$', category):
             validation_results.append({
                 'field': 'Category',
                 'status': 'FAILED',
@@ -113,8 +116,9 @@ def validate_record_type(record_type_obj):
             })
             
         # Order validation
+        order = record_type_obj.get('order', 0)
         try:
-            int(record_type_obj.order)
+            int(order)
             validation_results.append({
                 'field': 'Order',
                 'status': 'SUCCESS',
@@ -128,15 +132,16 @@ def validate_record_type(record_type_obj):
             })
             
         # Add stage validation
-        if hasattr(record_type_obj, 'StagesJson'):
+        stages_json = record_type_obj.get('StagesJson')
+        if stages_json:
             stage_validations = validate_stages(
-                record_type_obj.StagesJson,
-                record_type_obj.name
+                stages_json,
+                name
             )
             validation_results.extend(stage_validations)
             
         # Log validation results
-        logger.info(f"Completed validation for RecordType '{record_type_obj.name}'")
+        logger.info(f"Completed validation for RecordType '{name}'")
         return validation_results
             
     except Exception as e:
