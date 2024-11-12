@@ -3,6 +3,7 @@ from django.contrib import messages
 from django.db import IntegrityError
 from django.core.exceptions import ValidationError  # Add this import
 from django.http import FileResponse
+from . import settings
 import os
 from .models import RecordType, Stage, CoreField, CustomField, Role
 import re
@@ -14,6 +15,17 @@ from django.http import JsonResponse
 import json
 from django.http import HttpResponse
 from .export import export_record_fields
+from azure.data.tables import TableServiceClient
+from azure.core.exceptions import AzureError
+from django.views.decorators.http import require_POST
+from django.views.decorators.csrf import csrf_protect
+from datetime import datetime
+from .utils import validate_record_type
+from .utils import test_validate_record_type_from_json
+from .utils import test_validate_record_fields_from_json
+import csv
+import io
+import logging
 
 def index(request):
     show_disabled = request.GET.get('show_disabled') == 'on'
@@ -555,3 +567,328 @@ def export_fields(request, record_type):
     
     return response
 
+def get_azure_table_service():
+    """Helper function to get Azure Table Service client"""
+    conn_str = settings.AZURE_STORAGE_CONNECTION_STRING
+    if not conn_str:
+        raise ValueError("Azure Storage connection string not configured")
+    return TableServiceClient.from_connection_string(conn_str)
+
+def handle_azure_request(func):
+    """Decorator to handle Azure-related errors"""
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except AzureError as e:
+            return None, f"Error accessing Azure Storage: {str(e)}"
+        except Exception as e:
+            return None, f"Unexpected error: {str(e)}"
+    return wrapper
+
+@handle_azure_request
+def get_table_list():
+    """Get list of all Azure tables"""
+    table_service = get_azure_table_service()
+    return [table.name for table in table_service.list_tables()], None
+
+@handle_azure_request
+def get_table_data(table_name):
+    """Get data from specified Azure table"""
+    table_service = get_azure_table_service()
+    table_client = table_service.get_table_client(table_name)
+    
+    entities = table_client.list_entities()
+    data = []
+    columns = set(['PartitionKey', 'RowKey', 'Timestamp'])
+    
+    for entity in entities:
+        columns.update(entity.keys())
+        data.append(dict(entity))
+        
+    return {
+        'data': data,
+        'columns': sorted(list(columns))
+    }, None
+
+def list_tables(request):
+    """View to list all Azure tables"""
+    tables, error_message = get_table_list()
+    return render(request, 'tables/list_tables.html', {
+        'tables': tables,
+        'error_message': error_message
+    })
+
+def view_table_data(request, table_name):
+    """View to display data from a specific Azure table"""
+    result, error_message = get_table_data(table_name)
+    
+    context = {
+        'table_name': table_name,
+        'data': result.get('data', []) if result else [],
+        'columns': result.get('columns', []) if result else [],
+        'error_message': error_message
+    }
+    
+    return render(request, 'tables/view_table.html', context)
+
+@csrf_protect
+@require_POST
+def export_table_data(request, table_name):
+    try:
+        if not request.body:
+            return HttpResponse(
+                json.dumps({'error': 'No data received'}),
+                status=400,
+                content_type='application/json'
+            )
+
+        data = json.loads(request.body)
+        records = data.get('records', [])
+        
+        if not records:
+            return HttpResponse(
+                json.dumps({'error': 'No records selected'}),
+                status=400,
+                content_type='application/json'
+            )
+
+        # Create the response with just the records array
+        response = HttpResponse(
+            json.dumps(records, indent=2),
+            content_type='application/json'
+        )
+        response['Content-Disposition'] = f'attachment; filename="{table_name}_export.json"'
+        return response
+        
+    except json.JSONDecodeError:
+        return HttpResponse(
+            json.dumps({'error': 'Invalid JSON data'}),
+            status=400,
+            content_type='application/json'
+        )
+    except Exception as e:
+        return HttpResponse(
+            json.dumps({'error': str(e)}),
+            status=400,
+            content_type='application/json'
+        )
+
+def parse_csv_to_json(csv_file, file_type):
+    """
+    Convert CSV to JSON format matching our expected structure
+    """
+    logger = logging.getLogger(__name__)
+    logger.info(f"Starting CSV parsing for {file_type}")
+    
+    try:
+        # Reset file pointer to beginning
+        csv_file.seek(0)
+        
+        # Read the file content and decode it
+        content = csv_file.read()
+        if isinstance(content, bytes):
+            content = content.decode('utf-8-sig')  # Handle BOM if present
+        
+        # Log the first part of content to verify it's not empty
+        logger.info(f"File content length: {len(content)}")
+        logger.info(f"First 200 chars: {content[:200]}")
+        
+        # Split into lines and find first non-empty line
+        lines = [line.strip() for line in content.splitlines() if line.strip()]
+        if not lines:
+            logger.error("No non-empty lines found in file")
+            raise ValueError("CSV file appears to be empty")
+            
+        logger.info(f"Number of non-empty lines: {len(lines)}")
+        logger.info(f"First line: {lines[0]}")
+        
+        # Reset file pointer for CSV reader
+        csv_file.seek(0)
+        
+        # Create CSV reader
+        reader = csv.DictReader(
+            (line for line in csv_file.read().decode('utf-8-sig').splitlines() if line.strip()),
+            delimiter=',',
+            quotechar='"',
+            skipinitialspace=True
+        )
+        
+        # Log field names detected
+        field_names = reader.fieldnames
+        if not field_names:
+            logger.error("No headers detected in CSV file")
+            raise ValueError("No headers detected in CSV file")
+        logger.info(f"CSV headers found: {field_names}")
+        
+        records = []
+        for row_num, row in enumerate(reader, 1):
+            try:
+                # Clean up the row data
+                processed_row = {}
+                for key, value in row.items():
+                    if key and not key.endswith('@type'):  # Skip type annotation fields
+                        # Handle empty values and 'null' strings
+                        if not value or value.lower() == 'null':
+                            processed_row[key] = None
+                        else:
+                            # Convert boolean strings
+                            if value.lower() == 'true':
+                                processed_row[key] = True
+                            elif value.lower() == 'false':
+                                processed_row[key] = False
+                            else:
+                                processed_row[key] = value.strip()
+                
+                logger.debug(f"Processed row {row_num}: {processed_row}")
+                
+                # Validate required fields
+                if file_type == 'record_types':
+                    if 'RowKey' not in processed_row:
+                        error_msg = f"Row {row_num}: Missing required 'RowKey' column"
+                        logger.error(error_msg)
+                        raise ValueError(error_msg)
+                        
+                elif file_type == 'record_fields':
+                    required_fields = ['RowKey', 'PartitionKey']
+                    missing_fields = [f for f in required_fields if f not in processed_row]
+                    if missing_fields:
+                        error_msg = f"Row {row_num}: Missing required fields: {missing_fields}"
+                        logger.error(error_msg)
+                        raise ValueError(error_msg)
+                
+                records.append(processed_row)
+                
+            except Exception as e:
+                logger.error(f"Error processing row {row_num}: {str(e)}")
+                raise ValueError(f"Error in row {row_num}: {str(e)}")
+        
+        logger.info(f"Successfully parsed {len(records)} records from CSV")
+        return records
+        
+    except UnicodeDecodeError as e:
+        error_msg = f"Failed to decode CSV file: {str(e)}"
+        logger.error(error_msg)
+        raise ValueError(error_msg)
+    except csv.Error as e:
+        error_msg = f"CSV parsing error: {str(e)}"
+        logger.error(error_msg)
+        raise ValueError(error_msg)
+    except Exception as e:
+        error_msg = f"Unexpected error parsing CSV: {str(e)}"
+        logger.error(error_msg)
+        raise ValueError(error_msg)
+
+def test_validation(request):
+    """View to test both RecordType and RecordFields validation"""
+    logger = logging.getLogger(__name__)
+    
+    if request.method == 'POST':
+        try:
+            logger.info("Starting validation process")
+            
+            # Both files are required
+            if 'record_types_file' not in request.FILES or 'record_fields_file' not in request.FILES:
+                logger.error("Missing required files")
+                messages.error(request, "Both Record Types and Record Fields files are required")
+                return render(request, 'test_validation.html')
+            
+            record_type_results = []
+            field_results = []
+            record_types = []
+            
+            # Process Record Types file
+            record_types_file = request.FILES['record_types_file']
+            file_extension = record_types_file.name.split('.')[-1].lower()
+            logger.info(f"Processing Record Types file: {record_types_file.name} ({file_extension})")
+            
+            with tempfile.NamedTemporaryFile(delete=False, suffix=f'.{file_extension}') as tmp_file:
+                for chunk in record_types_file.chunks():
+                    tmp_file.write(chunk)
+                types_file_path = tmp_file.name
+                logger.info(f"Created temporary file for Record Types: {types_file_path}")
+            
+            # Convert CSV to JSON if necessary
+            if file_extension == 'csv':
+                try:
+                    logger.info("Converting Record Types CSV to JSON")
+                    record_types_data = parse_csv_to_json(record_types_file, 'record_types')
+                    # Write the converted JSON to the temp file
+                    with open(types_file_path, 'w') as json_file:
+                        json.dump(record_types_data, json_file)
+                    logger.info("Successfully converted Record Types CSV to JSON")
+                except ValueError as e:
+                    logger.error(f"CSV conversion error: {str(e)}")
+                    messages.error(request, f"Error in Record Types CSV: {str(e)}")
+                    return render(request, 'test_validation.html')
+            
+            # Validate Record Types and collect valid record type names
+            types_success, record_type_results = test_validate_record_type_from_json(types_file_path)
+            logger.info(f"Record Types validation complete. Success: {types_success}")
+            
+            # Extract valid record type names
+            with open(types_file_path, 'r') as file:
+                types_data = json.load(file)
+                record_types = [rt.get('RowKey') for rt in types_data]
+            
+            # Clean up temporary file
+            os.unlink(types_file_path)
+            
+            # Process Record Fields file
+            record_fields_file = request.FILES['record_fields_file']
+            file_extension = record_fields_file.name.split('.')[-1].lower()
+            logger.info(f"Processing Record Fields file: {record_fields_file.name} ({file_extension})")
+            
+            with tempfile.NamedTemporaryFile(delete=False, suffix=f'.{file_extension}') as tmp_file:
+                for chunk in record_fields_file.chunks():
+                    tmp_file.write(chunk)
+                fields_file_path = tmp_file.name
+                logger.info(f"Created temporary file for Record Fields: {fields_file_path}")
+            
+            # Convert CSV to JSON if necessary
+            all_fields = None
+            if file_extension == 'csv':
+                try:
+                    logger.info("Converting Record Fields CSV to JSON")
+                    all_fields = parse_csv_to_json(record_fields_file, 'record_fields')
+                    # Write the converted JSON to the temp file
+                    with open(fields_file_path, 'w') as json_file:
+                        json.dump(all_fields, json_file)
+                    logger.info("Successfully converted Record Fields CSV to JSON")
+                except ValueError as e:
+                    logger.error(f"CSV conversion error: {str(e)}")
+                    messages.error(request, f"Error in Record Fields CSV: {str(e)}")
+                    return render(request, 'test_validation.html')
+            
+            # Read all fields for duplicate checking if not already loaded
+            if all_fields is None:
+                with open(fields_file_path, 'r') as file:
+                    all_fields = json.load(file)
+            
+            # Validate Record Fields with record types list
+            fields_success, field_results = test_validate_record_fields_from_json(
+                fields_file_path,
+                record_types=record_types,
+                all_fields=all_fields
+            )
+            logger.info(f"Record Fields validation complete. Success: {fields_success}")
+            
+            # Clean up temporary file
+            os.unlink(fields_file_path)
+            
+            # Determine overall success
+            overall_success = types_success and fields_success
+            logger.info(f"Overall validation complete. Success: {overall_success}")
+            
+            return render(request, 'test_validation.html', {
+                'results': True,
+                'success': overall_success,
+                'record_type_results': record_type_results,
+                'field_results': field_results
+            })
+            
+        except Exception as e:
+            logger.exception("Unexpected error in test_validation view")
+            messages.error(request, f"Error processing files: {str(e)}")
+            return render(request, 'test_validation.html')
+    
+    return render(request, 'test_validation.html')

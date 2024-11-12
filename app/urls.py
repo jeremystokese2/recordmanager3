@@ -35,4 +35,8 @@ urlpatterns = [
     path('record/<str:record_type>/', views.record_fields, name='record_fields'),
     path('export/record-types/', views.export_record_types, name='export_record_types'),
     path('record-type/<str:record_type>/export-fields/', views.export_fields, name='export_fields'),
+    path('tables/', views.list_tables, name='list_tables'),
+    path('tables/<str:table_name>/', views.view_table_data, name='view_table_data'),
+    path('tables/<str:table_name>/export/', views.export_table_data, name='export_table_data'),
+    path('test-validation/', views.test_validation, name='test_validation'),
 ]

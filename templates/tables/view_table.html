@@ -1,0 +1,373 @@
+{% extends "base.html" %}
+{% load table_filters %}
+
+{% block content %}
+<!-- Add this line right at the start of the content block -->
+{% csrf_token %}
+
+<div class="container mt-4">
+    <!-- Breadcrumbs -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'index' %}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'list_tables' %}">Azure Tables</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{{ table_name }}</li>
+        </ol>
+    </nav>
+
+    <h2>Table: {{ table_name }}</h2>
+    
+    {% if error_message %}
+    <div class="alert alert-danger" role="alert">
+        {{ error_message }}
+    </div>
+    {% endif %}
+    
+    {% if data %}
+        <!-- Search and Filter Controls -->
+        <div class="row mb-3">
+            <div class="col-md-4">
+                <input type="text" id="searchInput" class="form-control" placeholder="Search all columns...">
+            </div>
+            <div class="col-md-4">
+                <select id="columnFilter" class="form-select">
+                    <option value="">Filter by column...</option>
+                    {% for column in columns %}
+                    <option value="{{ column }}">{{ column }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <input type="text" id="columnSearchInput" class="form-control" placeholder="Search in selected column..." disabled>
+            </div>
+        </div>
+
+        <!-- Selection Info and Actions -->
+        <div class="row mb-3">
+            <div class="col">
+                <div class="d-flex align-items-center">
+                    <div class="form-check me-3">
+                        <input type="checkbox" class="form-check-input" id="selectAll">
+                        <label class="form-check-label" for="selectAll">Select All</label>
+                    </div>
+                    <span id="selectionInfo" class="text-muted">
+                        0 items selected
+                    </span>
+                </div>
+            </div>
+            <div class="col text-end">
+                <button id="exportButton" class="btn btn-primary" disabled>
+                    Export Selected
+                </button>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table id="dataTable" class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th class="selection-column">
+                            <!-- Header checkbox handled by JavaScript -->
+                        </th>
+                        <!-- First show PartitionKey and RowKey -->
+                        <th class="sortable" data-column="PartitionKey">
+                            PartitionKey
+                            <span class="sort-indicator"></span>
+                        </th>
+                        <th class="sortable" data-column="RowKey">
+                            RowKey
+                            <span class="sort-indicator"></span>
+                        </th>
+                        <!-- Then show all other columns except PartitionKey and RowKey -->
+                        {% for column in columns %}
+                            {% if column != "PartitionKey" and column != "RowKey" %}
+                            <th class="sortable" data-column="{{ column }}">
+                                {{ column }}
+                                <span class="sort-indicator"></span>
+                            </th>
+                            {% endif %}
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in data %}
+                    <tr>
+                        <td>
+                            <input type="checkbox" class="form-check-input row-checkbox">
+                        </td>
+                        <!-- First show PartitionKey and RowKey -->
+                        <td>{{ row|get_item:"PartitionKey"|default_if_none:'' }}</td>
+                        <td>{{ row|get_item:"RowKey"|default_if_none:'' }}</td>
+                        <!-- Then show all other columns except PartitionKey and RowKey -->
+                        {% for column in columns %}
+                            {% if column != "PartitionKey" and column != "RowKey" %}
+                            <td>{{ row|get_item:column|default_if_none:'' }}</td>
+                            {% endif %}
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Table Info -->
+        <div class="row mt-3">
+            <div class="col">
+                <p id="tableInfo" class="text-muted">
+                    Showing <span id="visibleRows">{{ data|length }}</span> of <span id="totalRows">{{ data|length }}</span> rows
+                </p>
+            </div>
+        </div>
+
+        <!-- Add this style block -->
+        <style>
+            .sortable {
+                cursor: pointer;
+                position: relative;
+                padding-right: 20px;
+            }
+            .sort-indicator::after {
+                content: '⇕';
+                position: absolute;
+                right: 5px;
+                color: #999;
+            }
+            .sort-asc .sort-indicator::after {
+                content: '↑';
+                color: #000;
+            }
+            .sort-desc .sort-indicator::after {
+                content: '↓';
+                color: #000;
+            }
+            .selection-column {
+                width: 40px;
+            }
+        </style>
+
+        <!-- Add this script block -->
+        <script>
+            // Define table_name at the start of the script
+            const tableName = "{{ table_name }}";
+
+            document.addEventListener('DOMContentLoaded', function() {
+                const table = document.getElementById('dataTable');
+                const searchInput = document.getElementById('searchInput');
+                const columnFilter = document.getElementById('columnFilter');
+                const columnSearchInput = document.getElementById('columnSearchInput');
+                const tableInfo = document.getElementById('tableInfo');
+                const visibleRowsSpan = document.getElementById('visibleRows');
+                const totalRowsSpan = document.getElementById('totalRows');
+                const selectAllCheckbox = document.getElementById('selectAll');
+                const selectionInfo = document.getElementById('selectionInfo');
+
+                let currentSortColumn = null;
+                let currentSortDirection = 'asc';
+
+                // Selection handling
+                selectAllCheckbox.addEventListener('change', function() {
+                    const visibleRows = Array.from(table.querySelectorAll('tbody tr'))
+                        .filter(row => row.style.display !== 'none');
+                    
+                    visibleRows.forEach(row => {
+                        const checkbox = row.querySelector('.row-checkbox');
+                        checkbox.checked = this.checked;
+                    });
+                    
+                    updateSelectionInfo();
+                });
+
+                // Individual row selection
+                table.addEventListener('change', function(e) {
+                    if (e.target.classList.contains('row-checkbox')) {
+                        updateSelectionInfo();
+                        updateSelectAllState();
+                    }
+                });
+
+                function updateSelectionInfo() {
+                    const selectedCount = Array.from(table.querySelectorAll('.row-checkbox:checked')).length;
+                    selectionInfo.textContent = `${selectedCount} items selected`;
+                }
+
+                function updateSelectAllState() {
+                    const visibleCheckboxes = Array.from(table.querySelectorAll('tbody tr'))
+                        .filter(row => row.style.display !== 'none')
+                        .map(row => row.querySelector('.row-checkbox'));
+                    
+                    const allChecked = visibleCheckboxes.every(cb => cb.checked);
+                    const someChecked = visibleCheckboxes.some(cb => cb.checked);
+                    
+                    selectAllCheckbox.checked = allChecked;
+                    selectAllCheckbox.indeterminate = someChecked && !allChecked;
+                }
+
+                // Enable/disable column search based on column filter selection
+                columnFilter.addEventListener('change', function() {
+                    columnSearchInput.disabled = !this.value;
+                    columnSearchInput.value = '';
+                    filterTable();
+                });
+
+                // Search functionality
+                searchInput.addEventListener('input', filterTable);
+                columnSearchInput.addEventListener('input', filterTable);
+
+                // Sorting functionality
+                document.querySelectorAll('th.sortable').forEach(th => {
+                    th.addEventListener('click', function() {
+                        const column = this.dataset.column;
+                        const headers = table.querySelectorAll('th');
+                        
+                        headers.forEach(header => {
+                            header.classList.remove('sort-asc', 'sort-desc');
+                        });
+
+                        if (currentSortColumn === column) {
+                            currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
+                        } else {
+                            currentSortColumn = column;
+                            currentSortDirection = 'asc';
+                        }
+
+                        this.classList.add(`sort-${currentSortDirection}`);
+                        sortTable(column, currentSortDirection);
+                    });
+                });
+
+                function filterTable() {
+                    const searchTerm = searchInput.value.toLowerCase();
+                    const selectedColumn = columnFilter.value;
+                    const columnSearchTerm = columnSearchInput.value.toLowerCase();
+                    const rows = Array.from(table.querySelectorAll('tbody tr'));
+                    let visibleCount = 0;
+
+                    rows.forEach(row => {
+                        const cells = Array.from(row.getElementsByTagName('td'));
+                        cells.shift(); // Remove checkbox cell from search
+                        let showRow = true;
+
+                        if (searchTerm) {
+                            showRow = cells.some(cell => 
+                                cell.textContent.toLowerCase().includes(searchTerm)
+                            );
+                        }
+
+                        if (showRow && selectedColumn && columnSearchTerm) {
+                            const columnIndex = Array.from(table.querySelectorAll('th.sortable'))
+                                .findIndex(th => th.dataset.column === selectedColumn);
+                            showRow = cells[columnIndex].textContent
+                                .toLowerCase().includes(columnSearchTerm);
+                        }
+
+                        row.style.display = showRow ? '' : 'none';
+                        if (showRow) visibleCount++;
+                    });
+
+                    visibleRowsSpan.textContent = visibleCount;
+                    updateSelectAllState();
+                }
+
+                function sortTable(column, direction) {
+                    const rows = Array.from(table.querySelectorAll('tbody tr'));
+                    const columnIndex = Array.from(table.querySelectorAll('th.sortable'))
+                        .findIndex(th => th.dataset.column === column);
+
+                    const sortedRows = rows.sort((a, b) => {
+                        const aValue = a.cells[columnIndex + 1].textContent.trim(); // +1 for checkbox column
+                        const bValue = b.cells[columnIndex + 1].textContent.trim();
+
+                        const aNum = parseFloat(aValue);
+                        const bNum = parseFloat(bValue);
+
+                        if (!isNaN(aNum) && !isNaN(bNum)) {
+                            return direction === 'asc' ? aNum - bNum : bNum - aNum;
+                        }
+
+                        return direction === 'asc' 
+                            ? aValue.localeCompare(bValue)
+                            : bValue.localeCompare(aValue);
+                    });
+
+                    const tbody = table.querySelector('tbody');
+                    tbody.innerHTML = '';
+                    sortedRows.forEach(row => tbody.appendChild(row));
+                    
+                    filterTable();
+                }
+
+                // Export functionality
+                const exportButton = document.getElementById('exportButton');
+
+                function updateExportButton() {
+                    const selectedCount = Array.from(table.querySelectorAll('.row-checkbox:checked')).length;
+                    exportButton.disabled = selectedCount === 0;
+                }
+
+                // Update export button state when selection changes
+                table.addEventListener('change', function(e) {
+                    if (e.target.classList.contains('row-checkbox')) {
+                        updateExportButton();
+                    }
+                });
+
+                selectAllCheckbox.addEventListener('change', updateExportButton);
+
+                exportButton.addEventListener('click', async function() {
+                    const selectedRows = Array.from(table.querySelectorAll('.row-checkbox:checked')).map(checkbox => {
+                        const row = checkbox.closest('tr');
+                        const rowData = {};
+                        const cells = Array.from(row.cells);
+                        cells.shift(); // Remove checkbox cell
+                        
+                        document.querySelectorAll('th.sortable').forEach((th, index) => {
+                            const column = th.dataset.column;
+                            rowData[column] = cells[index].textContent.trim();
+                        });
+                        
+                        return rowData;
+                    });
+
+                    try {
+                        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+                        // Use tableName variable here instead of table_name
+                        const response = await fetch(`/tables/${tableName}/export/`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': csrfToken
+                            },
+                            body: JSON.stringify({ records: selectedRows })
+                        });
+
+                        if (!response.ok) {
+                            const errorData = await response.json();
+                            throw new Error(errorData.error || 'Export failed');
+                        }
+
+                        const blob = await response.blob();
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        // Use tableName variable here instead of table_name
+                        a.download = `${tableName}_export.json`;
+                        document.body.appendChild(a);
+                        a.click();
+                        window.URL.revokeObjectURL(url);
+                        a.remove();
+                    } catch (error) {
+                        console.error('Export error:', error);
+                        alert(`Failed to export data: ${error.message}`);
+                    }
+                });
+            });
+        </script>
+    {% else %}
+        {% if not error_message %}
+        <div class="alert alert-info" role="alert">
+            No data found in table.
+        </div>
+        {% endif %}
+    {% endif %}
+</div>
+{% endblock %} 

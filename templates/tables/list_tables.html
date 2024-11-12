@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- Breadcrumbs -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'index' %}">Home</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Azure Tables</li>
+        </ol>
+    </nav>
+
+    <h2>Azure Tables</h2>
+    
+    {% if error_message %}
+    <div class="alert alert-danger" role="alert">
+        {{ error_message }}
+    </div>
+    {% endif %}
+    
+    {% if tables %}
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Table Name</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for table in tables %}
+                    <tr>
+                        <td>{{ table }}</td>
+                        <td>
+                            <a href="{% url 'view_table_data' table_name=table %}" 
+                               class="btn btn-sm btn-primary">View Data</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        {% if not error_message %}
+        <div class="alert alert-info" role="alert">
+            No tables found in the Azure Storage account.
+        </div>
+        {% endif %}
+    {% endif %}
+</div>
+{% endblock %} 

@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Validation Results</h2>
+    
+    {% if success %}
+        <div class="alert alert-success">
+            All records processed successfully
+        </div>
+    {% else %}
+        <div class="alert alert-warning">
+            Some records failed validation
+        </div>
+    {% endif %}
+    
+    <div class="list-group mt-3">
+    {% for result in results %}
+        <div class="list-group-item">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h5 class="mb-0">{{ result.record }}</h5>
+                <span class="badge {% if result.status == 'SUCCESS' %}bg-success{% elif result.status == 'FAILED' %}bg-warning{% else %}bg-danger{% endif %}">
+                    {{ result.status }}
+                </span>
+            </div>
+            
+            {% if result.details %}
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Field</th>
+                                <th>Status</th>
+                                <th>Message</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {% for check in result.details %}
+                            <tr>
+                                <td>{{ check.field }}</td>
+                                <td>
+                                    <span class="badge {% if check.status == 'SUCCESS' %}bg-success{% elif check.status == 'FAILED' %}bg-warning{% else %}bg-danger{% endif %}">
+                                        {{ check.status }}
+                                    </span>
+                                </td>
+                                <td>{{ check.message }}</td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="mb-0"><small>{{ result.message }}</small></p>
+            {% endif %}
+        </div>
+    {% endfor %}
+    </div>
+    
+    <div class="mt-3">
+        <a href="{% url 'test_validation' %}" class="btn btn-primary">Test Another File</a>
+        <a href="{% url 'index' %}" class="btn btn-secondary">Return to Home</a>
+    </div>
+</div>
+{% endblock %} 
