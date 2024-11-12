@@ -115,6 +115,10 @@
                                 <input class="form-check-input" type="checkbox" id="hideInactiveFieldsToggle" checked>
                                 <label class="form-check-label" for="hideInactiveFieldsToggle">Hide inactive records</label>
                             </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="hideSkippedFieldsToggle" checked>
+                                <label class="form-check-label" for="hideSkippedFieldsToggle">Hide skipped fields</label>
+                            </div>
                         </div>
                         <button class="btn btn-sm btn-secondary" onclick="toggleAllFields()">Expand/Collapse All</button>
                     </div>
@@ -210,34 +214,84 @@
 document.addEventListener('DOMContentLoaded', function() {
     const hideInactiveTypesToggle = document.getElementById('hideInactiveTypesToggle');
     const hideInactiveFieldsToggle = document.getElementById('hideInactiveFieldsToggle');
+    const hideSkippedFieldsToggle = document.getElementById('hideSkippedFieldsToggle');
     
     hideInactiveTypesToggle.addEventListener('change', () => toggleInactiveRecords('types'));
-    hideInactiveFieldsToggle.addEventListener('change', () => toggleInactiveRecords('fields'));
+    hideInactiveFieldsToggle.addEventListener('change', () => toggleFieldVisibility());
+    hideSkippedFieldsToggle.addEventListener('change', () => toggleFieldVisibility());
     
     // Initial hide of inactive records since toggles default to checked
     toggleInactiveRecords('types');
-    toggleInactiveRecords('fields');
+    toggleFieldVisibility();
 });
 
-function toggleInactiveRecords(section) {
-    const hideInactive = section === 'types' ? 
-        document.getElementById('hideInactiveTypesToggle').checked :
-        document.getElementById('hideInactiveFieldsToggle').checked;
+function toggleFieldVisibility() {
+    const hideInactive = document.getElementById('hideInactiveFieldsToggle').checked;
+    const hideSkipped = document.getElementById('hideSkippedFieldsToggle').checked;
+    const fieldsSection = document.getElementById('fieldsSection');
     
-    const sectionId = section === 'types' ? 'typesSection' : 'fieldsSection';
-    const sectionElement = document.getElementById(sectionId);
-    
-    // Find all items in this section
-    const items = sectionElement.querySelectorAll('.mb-3');
+    // Find all field items
+    const items = fieldsSection.querySelectorAll('.mb-3');
     
     items.forEach(item => {
-        // Look for the Active/Inactive badge
-        const badge = item.querySelector('.badge.bg-secondary');
-        if (badge && badge.textContent.trim() === 'Inactive') {
-            // If we find an inactive badge, hide/show the item
-            item.style.display = hideInactive ? 'none' : '';
+        let shouldHide = false;
+        
+        // Check for inactive status
+        if (hideInactive) {
+            const inactiveBadge = item.querySelector('.badge.bg-secondary');
+            if (inactiveBadge && inactiveBadge.textContent.trim() === 'Inactive') {
+                shouldHide = true;
+            }
         }
+        
+        // Check for skipped/ignored status
+        if (hideSkipped && !shouldHide) {
+            // Find all table rows in this item
+            const rows = item.querySelectorAll('tr');
+            for (const row of rows) {
+                const statusCell = row.querySelector('td:nth-child(2)');
+                const messageCell = row.querySelector('td:last-child');
+                
+                if (statusCell && messageCell) {
+                    const statusBadge = statusCell.querySelector('.badge.bg-info');
+                    const messageText = messageCell.textContent.trim();
+                    
+                    if (statusBadge && 
+                        (messageText.includes('skipping validation') || 
+                         messageText.includes('ignored fields list'))) {
+                        shouldHide = true;
+                        break;
+                    }
+                }
+            }
+        }
+        
+        item.style.display = shouldHide ? 'none' : '';
     });
+    
+    // Handle empty groups after hiding items
+    const groups = fieldsSection.querySelectorAll('.mb-4');
+    groups.forEach(group => {
+        const visibleItems = Array.from(group.querySelectorAll('.mb-3')).filter(item => 
+            item.style.display !== 'none'
+        ).length;
+        group.style.display = visibleItems === 0 ? 'none' : '';
+    });
+}
+
+function toggleInactiveRecords(section) {
+    if (section === 'types') {
+        const hideInactive = document.getElementById('hideInactiveTypesToggle').checked;
+        const typesSection = document.getElementById('typesSection');
+        const items = typesSection.querySelectorAll('.mb-3');
+        
+        items.forEach(item => {
+            const badge = item.querySelector('.badge.bg-secondary');
+            if (badge && badge.textContent.trim() === 'Inactive') {
+                item.style.display = hideInactive ? 'none' : '';
+            }
+        });
+    }
 }
 
 function toggleAllTypes() {

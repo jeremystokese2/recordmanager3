@@ -5,7 +5,9 @@ from .constants import (
     VALID_FIELD_TYPES,
     DATASOURCE_REQUIRED_TYPES,
     ROLE_FIELD_TYPES,
-    SKIP_VALIDATION_MESSAGE
+    SKIP_VALIDATION_MESSAGE,
+    IGNORED_SP_FIELDS,
+    IGNORED_STATE_FIELDS
 )
 import json
 
@@ -35,6 +37,15 @@ def validate_record_field(field_data, record_types, all_fields):
         logger.debug(f"Skipping field {field_name} as it ends with _0")
         return None
         
+    # Skip ignored fields
+    if field_name in IGNORED_SP_FIELDS or field_name in IGNORED_STATE_FIELDS:
+        logger.debug(f"Skipping ignored field {field_name}")
+        return [{
+            'field': 'Ignored Field',
+            'status': 'INFO',
+            'message': f"Field {field_name} is in ignored fields list - skipping validation"
+        }]
+    
     try:
         logger.info(f"Starting validation for field: {field_name}")
         

@@ -49,9 +49,45 @@ VALID_WIZARD_POSITIONS = {0, 1}
 
 # Ignored Fields
 IGNORED_STATE_FIELDS = {
-    'ABCAssignedTo', 'ABCAutoResponseTemplates', 'ABCCancelled', 'ABCClosedDate',
+    'ABCAssignedTo',
+    'ABCAutoResponseTemplates',
+    'ABCCancelled',
+    'ABCClosedDate',
+    'ABCAccessCaveats',
+    'ABCActionedByMcu',
+    'ABCCorrespondentFrom',
+    'ABCCorrespondentTo', 
+    'ABCCreatedByUser',
+    'ABCDateCorrespondenceReceived',
+    'ABCDateCorrespondenceWritten',
+    'ABCDocumentOrdering',
+    'ABCDueDateCurrentTask',
+    'ABCDueDateCommentAdvisory',
+    'ABCLeadOrganisation',
+    'ABCLinkedAgendaId',
+    'ABCLinkedMeetingId',
+    'ABCModifiedByUser',
+    'ABCNoFurtherAction',
+    'ABCOnHold',
+    'ABCOriginalCorrespondencePath',
+    'ABCOverrideDefaultAccess',
+    'ABCRecommendations',
+    'ABCRecordId',
+    'ABCRelatedRecords',
+    'ABCSignatureRequired',
+    'ABCStageName',
+    'ABCSuperseded',
+    'ABCSupersededBy',
+    'ABCSupersededFrom',
+    'ABCTaskMappings',
+    'ABCViewAccessUsers',
+    'ABCWithdrawn'
 }
 
 IGNORED_SP_FIELDS = {
-    'DocumentSetDescription', 'FileLeafRef', 'FolderChildCount', 'ItemChildCount'
-} 
+    'DocumentSetDescription',
+    'FileLeafRef',
+    'FolderChildCount',
+    'ItemChildCount',
+    'ContentType'
+}
