@@ -27,24 +27,36 @@ from .utils.record_type_validator import (
 from .utils.record_field_validator import test_validate_record_fields_from_json
 from .utils.csv_parser import parse_csv_to_json
 
+logger = logging.getLogger('django.request')
+
 def index(request):
-    show_disabled = request.GET.get('show_disabled') == 'on'
-    record_types = RecordType.objects.all()
+    logger.info(f"Index view accessed - GET params: {request.GET}")
+    try:
+        show_disabled = request.GET.get('show_disabled') == 'on'
+        record_types = RecordType.objects.all()
+        
+        if not show_disabled:
+            record_types = record_types.filter(is_enabled=True)
+        
+        # Group record types by category
+        categories = {}
+        for record_type in record_types:
+            if record_type.category not in categories:
+                categories[record_type.category] = []
+            categories[record_type.category].append(record_type)
+        
+        logger.info(f"Found {len(record_types)} record types")
+        
+        return render(request, 'index.html', {
+            'categories': categories,
+            'show_disabled': show_disabled
+        })
+    except Exception as e:
+        logger.error(f"Error in index view: {str(e)}", exc_info=True)
+        raise
     
-    if not show_disabled:
-        record_types = record_types.filter(is_enabled=True)
-    
-    # Group record types by category
-    categories = {}
-    for record_type in record_types:
-        if record_type.category not in categories:
-            categories[record_type.category] = []
-        categories[record_type.category].append(record_type)
-    
-    return render(request, 'index.html', {
-        'categories': categories,
-        'show_disabled': show_disabled
-    })
+    logger.debug("View execution completed")
+    return response
 
 def create_record_type(request):
     if request.method == 'POST':
@@ -167,9 +179,12 @@ def create_record_type(request):
     return render(request, 'create_record_type.html')
 
 def record_fields(request, record_type):
+    logger.info(f"Record fields view accessed for type: {record_type}")
     record_type_obj = get_object_or_404(RecordType, name=record_type)
     stages = record_type_obj.stages.all().order_by('order')
     show_inactive = request.GET.get('show_inactive') == 'on'
+    
+    logger.info(f"Show inactive: {show_inactive}")
     
     # Group roles by stage
     roles_by_stage = {}
@@ -675,17 +690,21 @@ def export_table_data(request, table_name):
 
 def test_validation(request):
     """View to test both RecordType and RecordFields validation"""
-    logger = logging.getLogger(__name__)
+    logger.info(f"Test validation view accessed - Method: {request.method}")
     
     if request.method == 'POST':
         try:
-            logger.info("Starting validation process")
+            logger.info("Processing validation files")
             
             # Both files are required
             if 'record_types_file' not in request.FILES or 'record_fields_file' not in request.FILES:
-                logger.error("Missing required files")
+                logger.warning("Missing required files")
                 messages.error(request, "Both Record Types and Record Fields files are required")
                 return render(request, 'test_validation.html')
+            
+            # Log file information
+            logger.info(f"Record Types file: {request.FILES['record_types_file'].name}")
+            logger.info(f"Record Fields file: {request.FILES['record_fields_file'].name}")
             
             record_type_results = []
             field_results = []

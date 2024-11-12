@@ -7,7 +7,8 @@ RECORD_TYPE_FIELD_MAPPING = {
     'colour': 'Color',
     'order': 'Order',
     'is_enabled': 'IsActive',
-    'enable_correspondence': 'IsCorrespondenceType'
+    'enable_correspondence': 'IsCorrespondenceType',
+    'stages_json': 'StagesJson'
 }
 
 # Record Field Mapping

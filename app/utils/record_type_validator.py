@@ -14,8 +14,17 @@ def map_json_to_record_type(json_data, field_mapping=RECORD_TYPE_FIELD_MAPPING):
     for model_field, json_field in field_mapping.items():
         value = json_data.get(json_field)
         
+        if model_field == 'name' and value is None:
+            value = json_data.get('RowKey')
+            
         if model_field in ['is_enabled', 'enable_correspondence']:
             value = str(value).lower() == 'true' if value else False
+            
+        if model_field == 'is_enabled' and value is None:
+            value = str(json_data.get('IsActive', 'true')).lower() == 'true'
+            
+        if model_field == 'colour' and value is None:
+            value = json_data.get('Color', '#000000')
             
         if value is None and model_field in ['description', 'colour', 'order']:
             value = '' if model_field == 'description' else (

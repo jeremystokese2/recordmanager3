@@ -14,6 +14,7 @@ from pathlib import Path
 import os
 from dotenv import load_dotenv
 from django.core.management.utils import get_random_secret_key
+import logging.config
 
 load_dotenv()
 
@@ -135,35 +136,51 @@ SESSION_CACHE_ALIAS = 'default'
 # Messages configuration
 MESSAGE_STORAGE = 'django.contrib.messages.storage.session.SessionStorage'
 
+# Logging Configuration
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'formatters': {
         'verbose': {
-            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'format': '[{levelname}] {asctime} {module} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '[{levelname}] {message}',
             'style': '{',
         },
     },
     'handlers': {
         'console': {
             'class': 'logging.StreamHandler',
-            'formatter': 'verbose',
+            'formatter': 'simple',
+            'level': 'DEBUG',
         },
-    },
-    'root': {
-        'handlers': ['console'],
-        'level': 'INFO',
     },
     'loggers': {
-        'django': {
-            'handlers': ['console'],
-            'level': 'INFO',
-            'propagate': False,
-        },
-        'app': {
+        '': {  # Root logger
             'handlers': ['console'],
             'level': 'DEBUG',
-            'propagate': False,
+        },
+        'django': {  # Django's logger
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+        'django.server': {  # Server requests and responses
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'django.request': {  # Request/response logging
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'app': {  # Your app's logger
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': True,
         },
     },
 }
