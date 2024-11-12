@@ -26,6 +26,11 @@ from .utils.record_type_validator import (
 )
 from .utils.record_field_validator import test_validate_record_fields_from_json
 from .utils.csv_parser import parse_csv_to_json
+from .utils.constants import (
+    CORE_FIELDS,
+    IGNORED_SP_FIELDS,
+    IGNORED_STATE_FIELDS
+)
 
 logger = logging.getLogger('django.request')
 

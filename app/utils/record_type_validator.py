@@ -2,7 +2,12 @@ import logging
 import json
 import re
 from django.core.exceptions import ValidationError
-from .constants import RECORD_TYPE_FIELD_MAPPING, SKIP_VALIDATION_MESSAGE
+from .constants import (
+    RECORD_TYPE_FIELD_MAPPING, 
+    SKIP_VALIDATION_MESSAGE,
+    IGNORED_STATE_FIELDS,
+    IGNORED_SP_FIELDS
+)
 from .stage_validator import validate_stages
 
 logger = logging.getLogger(__name__)
@@ -172,10 +177,19 @@ def test_validate_record_type_from_json(json_file_path, field_mapping=None):
         with open(json_file_path, 'r') as file:
             records = json.load(file)
             
+        # Filter out ignored fields before processing
+        filtered_records = [
+            record for record in records 
+            if record.get('RowKey') not in IGNORED_STATE_FIELDS 
+            and record.get('RowKey') not in IGNORED_SP_FIELDS
+        ]
+        
+        logger.info(f"Filtered {len(records) - len(filtered_records)} ignored fields")
+        
         mapping = field_mapping or RECORD_TYPE_FIELD_MAPPING
         overall_success = True
             
-        for record in records:
+        for record in filtered_records:
             try:
                 # Check IsActive status first
                 is_active = str(record.get('IsActive', 'true')).lower() == 'true'

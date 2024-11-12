@@ -280,10 +280,39 @@
 
 <!-- Add JavaScript to handle the toggle -->
 <script>
-document.getElementById('show_inactive').addEventListener('change', function() {
-    const url = new URL(window.location.href);
-    url.searchParams.set('show_inactive', this.checked ? 'on' : 'off');
-    window.location.href = url.toString();
+document.addEventListener('DOMContentLoaded', function() {
+    const showInactiveToggle = document.getElementById('show_inactive');
+    const showSkippedToggle = document.getElementById('show_skipped');
+    
+    function updateFieldVisibility() {
+        const rows = document.querySelectorAll('[data-field-row]');
+        rows.forEach(row => {
+            const isInactive = row.getAttribute('data-inactive') === 'true';
+            const isSkipped = row.getAttribute('data-skipped') === 'true';
+            const isAlwaysValidate = row.getAttribute('data-always-validate') === 'true';
+            
+            // Always show special core fields that require validation
+            if (isAlwaysValidate) {
+                row.style.display = '';
+                return;
+            }
+            
+            // Handle other fields based on toggle settings
+            if (!showInactiveToggle.checked && isInactive) {
+                row.style.display = 'none';
+            } else if (!showSkippedToggle.checked && isSkipped) {
+                row.style.display = 'none';
+            } else {
+                row.style.display = '';
+            }
+        });
+    }
+    
+    showInactiveToggle.addEventListener('change', updateFieldVisibility);
+    showSkippedToggle.addEventListener('change', updateFieldVisibility);
+    
+    // Initial visibility update
+    updateFieldVisibility();
 });
 </script>
 {% endblock %}

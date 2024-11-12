@@ -29,6 +29,26 @@
     {% if results %}
         <div class="mb-3">
             <h3>Validation Results</h3>
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h5>Legend</h5>
+                    <div class="d-flex gap-2 flex-wrap">
+                        <span class="badge bg-success">Active</span>
+                        <span class="badge bg-secondary">Inactive</span>
+                        <span class="badge bg-primary">Core Field</span>
+                        <span class="badge bg-success">Success</span>
+                        <span class="badge bg-warning">Failed</span>
+                        <span class="badge bg-danger">Error</span>
+                        <span class="badge bg-info">Info</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    {% if results %}
+        <div class="mb-3">
+            <h3>Validation Results</h3>
             
             <!-- Record Types Section -->
             <div class="card mb-4">
@@ -113,7 +133,7 @@
                         <div class="d-flex align-items-center gap-3">
                             <h4 class="mb-0">Record Fields</h4>
                             <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="hideInactiveFieldsToggle" checked>
+                                <input class="form-check-input" type="checkbox" id="hideInactiveFieldsToggle">
                                 <label class="form-check-label" for="hideInactiveFieldsToggle">Hide inactive records</label>
                             </div>
                             <div class="form-check form-switch">
@@ -148,64 +168,78 @@
                                 {% endwith %}
                             </div>
                             <div class="collapse show" id="group{{ forloop.counter }}">
-                                {% for result in group.list %}
-                                    <div class="mb-3">
-                                        <div class="d-flex justify-content-between align-items-center clickable-header p-2 rounded"
-                                             data-bs-toggle="collapse"
-                                             data-bs-target="#field{{ forloop.parentloop.counter }}{{ forloop.counter }}"
-                                             aria-expanded="false">
-                                            <div class="d-flex align-items-center gap-3">
-                                                <i class="bi bi-caret-right-fill caret-toggle"></i>
-                                                <h6 class="mb-0">{{ result.record }}</h6>
-                                                {% if result.is_active is not None %}
-                                                    <span class="badge {% if result.is_active %}bg-success{% else %}bg-secondary{% endif %}">
-                                                        {{ result.is_active|yesno:"Active,Inactive" }}
-                                                    </span>
-                                                {% endif %}
-                                                <span class="badge {% if result.status == 'SUCCESS' %}bg-success{% elif result.status == 'FAILED' %}bg-warning{% else %}bg-danger{% endif %}">
-                                                    {{ result.status }}
-                                                </span>
-                                            </div>
-                                            <!-- Add per-item stats -->
-                                            {% with item_stats=result.details|get_validation_stats %}
-                                                <div class="d-flex gap-2">
-                                                    {% if item_stats.success > 0 %}<span class="badge bg-success">{{ item_stats.success }}</span>{% endif %}
-                                                    {% if item_stats.failed > 0 %}<span class="badge bg-warning">{{ item_stats.failed }}</span>{% endif %}
-                                                    {% if item_stats.error > 0 %}<span class="badge bg-danger">{{ item_stats.error }}</span>{% endif %}
-                                                    {% if item_stats.info > 0 %}<span class="badge bg-info">{{ item_stats.info }}</span>{% endif %}
-                                                    {% if item_stats.warning > 0 %}<span class="badge bg-warning text-dark">{{ item_stats.warning }}</span>{% endif %}
+                                {% with sorted_results=group.list|dictsort:"record_display_name" %}
+                                    {% for result in sorted_results %}
+                                        <div class="mb-3">
+                                            <div class="d-flex justify-content-between align-items-center clickable-header p-2 rounded"
+                                                 data-bs-toggle="collapse"
+                                                 data-bs-target="#field{{ forloop.parentloop.counter }}{{ forloop.counter }}"
+                                                 aria-expanded="false">
+                                                <div class="d-flex align-items-center gap-3">
+                                                    <i class="bi bi-caret-right-fill caret-toggle"></i>
+                                                    <h6 class="mb-0">
+                                                        {% if result.display_name %}
+                                                            {{ result.display_name }} ({{ result.record }})
+                                                        {% else %}
+                                                            {{ result.record }}
+                                                        {% endif %}
+                                                    </h6>
+                                                    {% if result.record|is_core_field %}
+                                                        <span class="badge bg-primary">Core Field</span>
+                                                        {% if result.record|is_system_mandatory %}
+                                                            <span class="badge bg-info">System Mandatory</span>
+                                                        {% endif %}
+                                                    {% endif %}
+                                                    {% if result.is_active %}
+                                                        <span class="badge bg-success">Active</span>
+                                                    {% else %}
+                                                        <span class="badge bg-secondary">Inactive</span>
+                                                    {% endif %}
+                                                    {% with item_stats=result.details|get_validation_stats %}
+                                                        <span class="badge {% if item_stats.error > 0 %}bg-danger">ERROR{% else %}bg-success">SUCCESS{% endif %}</span>
+                                                    {% endwith %}
                                                 </div>
-                                            {% endwith %}
-                                        </div>
-                                        
-                                        <div class="collapse" id="field{{ forloop.parentloop.counter }}{{ forloop.counter }}">
-                                            <div class="table-responsive mt-2">
-                                                <table class="table table-sm">
-                                                    <thead>
-                                                        <tr>
-                                                            <th>Check</th>
-                                                            <th>Status</th>
-                                                            <th>Message</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                    {% for check in result.details %}
-                                                        <tr>
-                                                            <td>{{ check.field }}</td>
-                                                            <td>
-                                                                <span class="badge {% if check.status == 'SUCCESS' %}bg-success{% elif check.status == 'FAILED' %}bg-warning{% elif check.status == 'INFO' %}bg-info{% else %}bg-danger{% endif %}">
-                                                                    {{ check.status }}
-                                                                </span>
-                                                            </td>
-                                                            <td>{{ check.message|safe }}</td>
-                                                        </tr>
-                                                    {% endfor %}
-                                                    </tbody>
-                                                </table>
+                                                <!-- Add per-item stats -->
+                                                {% with item_stats=result.details|get_validation_stats %}
+                                                    <div class="d-flex gap-2">
+                                                        {% if item_stats.success > 0 %}<span class="badge bg-success">{{ item_stats.success }}</span>{% endif %}
+                                                        {% if item_stats.failed > 0 %}<span class="badge bg-warning">{{ item_stats.failed }}</span>{% endif %}
+                                                        {% if item_stats.error > 0 %}<span class="badge bg-danger">{{ item_stats.error }}</span>{% endif %}
+                                                        {% if item_stats.info > 0 %}<span class="badge bg-info">{{ item_stats.info }}</span>{% endif %}
+                                                        {% if item_stats.warning > 0 %}<span class="badge bg-warning text-dark">{{ item_stats.warning }}</span>{% endif %}
+                                                    </div>
+                                                {% endwith %}
+                                            </div>
+                                            
+                                            <div class="collapse" id="field{{ forloop.parentloop.counter }}{{ forloop.counter }}">
+                                                <div class="table-responsive mt-2">
+                                                    <table class="table table-sm">
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Check</th>
+                                                                <th>Status</th>
+                                                                <th>Message</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                        {% for check in result.details %}
+                                                            <tr>
+                                                                <td>{{ check.field }}</td>
+                                                                <td>
+                                                                    <span class="badge {% if check.status == 'SUCCESS' %}bg-success{% elif check.status == 'FAILED' %}bg-warning{% elif check.status == 'INFO' %}bg-info{% else %}bg-danger{% endif %}">
+                                                                        {{ check.status }}
+                                                                    </span>
+                                                                </td>
+                                                                <td>{{ check.message|safe }}</td>
+                                                            </tr>
+                                                        {% endfor %}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                {% endfor %}
+                                    {% endfor %}
+                                {% endwith %}
                             </div>
                         </div>
                     {% endfor %}

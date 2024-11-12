@@ -1,4 +1,5 @@
 from django import template
+from app.utils.constants import CORE_FIELDS
 
 register = template.Library()
 
@@ -37,3 +38,28 @@ def get_validation_stats(results):
                 stats['info'] += 1
     
     return stats 
+
+@register.filter 
+def is_core_field(field_name):
+    """Check if a field is a core field"""
+    return field_name in CORE_FIELDS
+
+@register.filter
+def get_field_badges(field_name, is_active):
+    """Generate badge HTML for field status indicators"""
+    badges = []
+    
+    # Add active/inactive badge
+    if is_active:
+        badges.append('<span class="badge bg-success">Active</span>')
+    else:
+        badges.append('<span class="badge bg-secondary">Inactive</span>')
+        
+    # Core field badge is now handled separately in the template
+    return ' '.join(badges) 
+
+@register.filter
+def is_system_mandatory(field_name):
+    """Check if a field is system mandatory"""
+    SYSTEM_MANDATORY_FIELDS = {'Title', 'ABCOrgLevel1', 'ABCOrgLevel2'}
+    return field_name in SYSTEM_MANDATORY_FIELDS

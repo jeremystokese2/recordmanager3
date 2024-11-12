@@ -92,3 +92,24 @@ IGNORED_SP_FIELDS = {
     'ItemChildCount',
     'ContentType'
 }
+
+# Add new core fields constant
+CORE_FIELDS = {
+    'Title',
+    'ABCTopicSummary',
+    'ABCRequestFrom',
+    'ABCDateRequested',
+    'ABCTimeframe',
+    'ABCDecisionCategory',
+    'ABCOrgLevel1',
+    'ABCOrgLevel2', 
+    'ABCOrgLevel3',
+    'ABCOrgLevel4'
+}
+
+# Add new constant for system mandatory fields
+SYSTEM_MANDATORY_FIELDS = {
+    'Title',
+    'ABCOrgLevel1', 
+    'ABCOrgLevel2'
+}

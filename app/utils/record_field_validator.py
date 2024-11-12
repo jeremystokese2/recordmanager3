@@ -7,7 +7,9 @@ from .constants import (
     ROLE_FIELD_TYPES,
     SKIP_VALIDATION_MESSAGE,
     IGNORED_SP_FIELDS,
-    IGNORED_STATE_FIELDS
+    IGNORED_STATE_FIELDS,
+    CORE_FIELDS,
+    VALID_WIZARD_POSITIONS
 )
 import json
 
@@ -29,7 +31,6 @@ def map_json_to_record_field(json_data, field_mapping=RECORD_FIELD_MAPPING):
 
 def validate_record_field(field_data, record_types, all_fields):
     """Validates a single record field according to rules."""
-    validation_results = []
     field_name = field_data.get('RowKey', 'Unknown Field')
     
     # Skip fields ending with _0
@@ -40,25 +41,48 @@ def validate_record_field(field_data, record_types, all_fields):
     # Skip ignored fields
     if field_name in IGNORED_SP_FIELDS or field_name in IGNORED_STATE_FIELDS:
         logger.debug(f"Skipping ignored field {field_name}")
-        return [{
-            'field': 'Ignored Field',
-            'status': 'INFO',
-            'message': f"Field {field_name} is in ignored fields list - skipping validation"
-        }]
+        return None
+        
+    validation_results = []
     
     try:
         logger.info(f"Starting validation for field: {field_name}")
         
         # Check IsActive status first
         is_active = str(field_data.get('IsActive', 'true')).lower() == 'true'
+        not_editable = str(field_data.get('NotEditable', 'false')).lower() == 'true'
+        field_name = field_data.get('RowKey', 'Unknown Field')
+
+        # Special handling for specific core fields
+        SYSTEM_MANDATORY_FIELDS = {'Title', 'ABCOrgLevel1', 'ABCOrgLevel2'}
+
         if not is_active:
-            logger.info(f"Field {field_name} is inactive - skipping validation")
-            return [{
-                'field': 'IsActive',
-                'status': 'INFO',
-                'message': SKIP_VALIDATION_MESSAGE
-            }]
-            
+            if field_name in SYSTEM_MANDATORY_FIELDS:
+                validation_results.append({
+                    'field': 'IsActive',
+                    'status': 'INFO',
+                    'message': f"Core field '{field_name}' is marked as inactive but will be shown on UI as it is system mandatory"
+                })
+            elif field_name in CORE_FIELDS:
+                if not not_editable:
+                    validation_results.append({
+                        'field': 'IsActive',
+                        'status': 'ERROR',
+                        'message': f"Core field '{field_name}' will not be hidden. To hide, set NotEditable to true, or to show, set IsActive to true and NotEditable to false"
+                    })
+                else:
+                    validation_results.append({
+                        'field': 'IsActive',
+                        'status': 'INFO',
+                        'message': f"Core field '{field_name}' is marked as inactive and not editable"
+                    })
+            else:
+                return [{
+                    'field': 'IsActive',
+                    'status': 'INFO',
+                    'message': SKIP_VALIDATION_MESSAGE
+                }]
+
         partition_key = field_data.get('PartitionKey', '')
         
         # 1. PartitionKey validation
@@ -198,6 +222,57 @@ def validate_record_field(field_data, record_types, all_fields):
                     'message': "FieldType must be a valid integer"
                 })
                 
+        # Add WizardPosition validation for non-role fields
+        wizard_position = field_data.get('WizardPosition')
+        
+        # Determine if this is a role field
+        is_role_field = False
+        if field_type is not None:
+            try:
+                field_type_int = int(field_type)
+                is_role_field = field_type_int in ROLE_FIELD_TYPES
+            except (ValueError, TypeError):
+                pass
+        
+        if not is_role_field:
+            # Validate WizardPosition for non-role fields
+            # Handle empty, None, nan, or missing values
+            if wizard_position is None or wizard_position == '' or str(wizard_position).lower() == 'nan':
+                validation_results.append({
+                    'field': 'WizardPosition',
+                    'status': 'INFO',
+                    'message': "WizardPosition not specified - defaulting to 0 (Record Information page)"
+                })
+            else:
+                try:
+                    wizard_pos_int = int(float(wizard_position))  # Convert through float to handle numeric strings
+                    if wizard_pos_int not in VALID_WIZARD_POSITIONS:
+                        validation_results.append({
+                            'field': 'WizardPosition',
+                            'status': 'FAILED',
+                            'message': f"Invalid WizardPosition value: {wizard_position}. Must be 0 (Record Information) or 1 (Record Response)"
+                        })
+                    else:
+                        page_type = "Record Response page" if wizard_pos_int == 1 else "Record Information page"
+                        validation_results.append({
+                            'field': 'WizardPosition',
+                            'status': 'SUCCESS',
+                            'message': f"Field will appear on {page_type}"
+                        })
+                except (ValueError, TypeError):
+                    validation_results.append({
+                        'field': 'WizardPosition',
+                        'status': 'FAILED',
+                        'message': f"WizardPosition must be a valid integer (0 or 1), got: {wizard_position}"
+                    })
+        else:
+            # Add info message for role fields
+            validation_results.append({
+                'field': 'WizardPosition',
+                'status': 'INFO',
+                'message': "Role field - will appear on People and Roles page"
+            })
+
         # Additional validations...
         
     except Exception as e:
@@ -222,55 +297,71 @@ def test_validate_record_fields_from_json(json_file_path, record_types=None, all
             with open(json_file_path, 'r') as file:
                 all_fields = json.load(file)
                 
-        # Filter out fields ending with _0
-        all_fields = [f for f in all_fields if not f.get('RowKey', '').endswith('_0')]
+        # Filter out fields ending with _0 and ignored fields
+        filtered_fields = [
+            f for f in all_fields 
+            if not f.get('RowKey', '').endswith('_0') 
+            and f.get('RowKey') not in IGNORED_STATE_FIELDS 
+            and f.get('RowKey') not in IGNORED_SP_FIELDS
+        ]
+        
+        logger.info(f"Filtered out {len(all_fields) - len(filtered_fields)} ignored/system fields")
                 
         overall_success = True
             
-        for field in all_fields:
+        for field in filtered_fields:
             try:
-                # Check IsActive status first
                 is_active = str(field.get('IsActive', 'true')).lower() == 'true'
                 field_name = field.get('RowKey', 'Unknown Field')
+                display_name = field.get('DisplayName', field_name)  # Get DisplayName, fallback to RowKey
                 
+                # Handle inactive fields
                 if not is_active:
-                    validation_results.append({
-                        'record': field_name,
-                        'status': 'INFO',
-                        'is_active': is_active,
-                        'partition_key': field.get('PartitionKey', ''),
-                        'details': [{
-                            'field': 'IsActive',
+                    if field_name not in CORE_FIELDS:
+                        validation_results.append({
+                            'record': field_name,
+                            'display_name': display_name,  # Add display name
+                            'record_display_name': display_name or field_name,  # For sorting
                             'status': 'INFO',
-                            'message': SKIP_VALIDATION_MESSAGE
-                        }]
-                    })
-                    continue
+                            'is_active': is_active,
+                            'partition_key': field.get('PartitionKey', ''),
+                            'details': [{
+                                'field': 'IsActive',
+                                'status': 'INFO',
+                                'message': SKIP_VALIDATION_MESSAGE
+                            }]
+                        })
+                        continue
                 
-                # Proceed with normal validation for active fields
+                # Proceed with validation for active fields and special core fields
                 field_validations = validate_record_field(
                     field,
                     record_types=record_types or [],
-                    all_fields=all_fields
+                    all_fields=filtered_fields
                 )
                 
-                has_failures = any(check['status'] == 'FAILED' for check in field_validations)
-                
-                validation_results.append({
-                    'record': field_name,
-                    'status': 'FAILED' if has_failures else 'SUCCESS',
-                    'is_active': is_active,
-                    'partition_key': field.get('PartitionKey', ''),
-                    'details': field_validations
-                })
-                
-                if has_failures:
-                    overall_success = False
+                if field_validations:  # Only add results if validations were performed
+                    has_failures = any(check['status'] == 'FAILED' for check in field_validations)
+                    
+                    validation_results.append({
+                        'record': field_name,
+                        'display_name': display_name,  # Add display name
+                        'record_display_name': display_name or field_name,  # For sorting
+                        'status': 'FAILED' if has_failures else 'SUCCESS',
+                        'is_active': is_active,
+                        'partition_key': field.get('PartitionKey', ''),
+                        'details': field_validations
+                    })
+                    
+                    if has_failures:
+                        overall_success = False
                     
             except Exception as e:
                 overall_success = False
                 validation_results.append({
                     'record': field.get('RowKey', 'Unknown Field'),
+                    'display_name': field.get('DisplayName', 'Unknown Field'),  # Add display name
+                    'record_display_name': field.get('DisplayName', 'Unknown Field'),  # For sorting
                     'status': 'ERROR',
                     'details': [{
                         'field': 'System',
@@ -287,6 +378,8 @@ def test_validate_record_fields_from_json(json_file_path, record_types=None, all
         logger.error(error_msg)
         return False, [{
             'record': 'File Error',
+            'display_name': 'File Error',  # Add display name
+            'record_display_name': 'File Error',  # For sorting
             'status': 'ERROR',
             'details': [{
                 'field': 'JSON',
@@ -300,6 +393,8 @@ def test_validate_record_fields_from_json(json_file_path, record_types=None, all
         logger.error(error_msg)
         return False, [{
             'record': 'System Error',
+            'display_name': 'System Error',  # Add display name
+            'record_display_name': 'System Error',  # For sorting
             'status': 'ERROR',
             'details': [{
                 'field': 'System',
