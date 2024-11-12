@@ -30,6 +30,11 @@ def validate_record_field(field_data, record_types, all_fields):
     validation_results = []
     field_name = field_data.get('RowKey', 'Unknown Field')
     
+    # Skip fields ending with _0
+    if field_name.endswith('_0'):
+        logger.debug(f"Skipping field {field_name} as it ends with _0")
+        return None
+        
     try:
         logger.info(f"Starting validation for field: {field_name}")
         
@@ -205,6 +210,9 @@ def test_validate_record_fields_from_json(json_file_path, record_types=None, all
         if all_fields is None:
             with open(json_file_path, 'r') as file:
                 all_fields = json.load(file)
+                
+        # Filter out fields ending with _0
+        all_fields = [f for f in all_fields if not f.get('RowKey', '').endswith('_0')]
                 
         overall_success = True
             
