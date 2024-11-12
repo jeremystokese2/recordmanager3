@@ -223,12 +223,14 @@
     align-items: center;
     justify-content: center;
     transition: transform 0.2s;
+    transform: rotate(0deg);
 }
 
-.caret-toggle.collapsed {
-    transform: rotate(-90deg);
+.caret-toggle.rotated {
+    transform: rotate(90deg);
 }
 
+/* Remove the parent-header style since we'll handle it through collapse state */
 .clickable-header {
     cursor: pointer;
     user-select: none;
@@ -253,18 +255,29 @@ document.addEventListener('DOMContentLoaded', function() {
     toggleInactiveRecords('types');
     toggleFieldVisibility();
     
-    // Initialize all carets
-    updateCarets();
-    
-    // Add collapse event listeners
+    // Initialize all carets based on collapse state
     document.querySelectorAll('[data-bs-toggle="collapse"]').forEach(element => {
-        element.addEventListener('shown.bs.collapse', function() {
-            updateCaret(this, false);
-        });
+        const targetId = element.getAttribute('data-bs-target');
+        const target = document.querySelector(targetId);
+        const caret = element.querySelector('.caret-toggle');
         
-        element.addEventListener('hidden.bs.collapse', function() {
-            updateCaret(this, true);
-        });
+        if (target && caret) {
+            // Set initial state based on if the collapse is shown
+            if (target.classList.contains('show')) {
+                caret.classList.add('rotated');
+            } else {
+                caret.classList.remove('rotated');
+            }
+            
+            // Add event listeners for Bootstrap collapse events
+            target.addEventListener('show.bs.collapse', () => {
+                caret.classList.add('rotated');
+            });
+            
+            target.addEventListener('hide.bs.collapse', () => {
+                caret.classList.remove('rotated');
+            });
+        }
     });
 });
 
@@ -343,15 +356,17 @@ function toggleAllTypes() {
     const isAnyCollapsed = Array.from(collapses).some(c => !c.classList.contains('show'));
     
     collapses.forEach(collapse => {
+        const header = document.querySelector(`[data-bs-target="#${collapse.id}"]`);
+        const caret = header?.querySelector('.caret-toggle');
+        
         if (isAnyCollapsed) {
             collapse.classList.add('show');
+            caret?.classList.add('rotated');
         } else {
             collapse.classList.remove('show');
+            caret?.classList.remove('rotated');
         }
     });
-    
-    // Update all carets
-    updateCarets();
 }
 
 function toggleFieldGroup(groupId) {
@@ -371,36 +386,17 @@ function toggleAllFields() {
     const isAnyCollapsed = Array.from(collapses).some(c => !c.classList.contains('show'));
     
     collapses.forEach(collapse => {
+        const header = document.querySelector(`[data-bs-target="#${collapse.id}"]`);
+        const caret = header?.querySelector('.caret-toggle');
+        
         if (isAnyCollapsed) {
             collapse.classList.add('show');
+            caret?.classList.add('rotated');
         } else {
             collapse.classList.remove('show');
+            caret?.classList.remove('rotated');
         }
     });
-    
-    // Update all carets
-    updateCarets();
-}
-
-function updateCarets() {
-    document.querySelectorAll('[data-bs-toggle="collapse"]').forEach(element => {
-        const targetId = element.getAttribute('data-bs-target');
-        const target = document.querySelector(targetId);
-        if (target) {
-            updateCaret(element, !target.classList.contains('show'));
-        }
-    });
-}
-
-function updateCaret(element, collapsed) {
-    const caret = element.querySelector('.caret-toggle');
-    if (caret) {
-        if (collapsed) {
-            caret.classList.add('collapsed');
-        } else {
-            caret.classList.remove('collapsed');
-        }
-    }
 }
 </script>
 {% endblock %} 
