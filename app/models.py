@@ -38,9 +38,20 @@ class CoreField(models.Model):
     description = models.CharField(
         max_length=300, 
         blank=True,
-        null=True,  # Add this to handle existing records
+        null=True,
         validators=[MaxLengthValidator(300)]
     )
+
+    def save(self, *args, **kwargs):
+        # Special handling for Title field
+        if self.name == 'title':
+            self.field_type = 'text'
+            if not self.description:
+                self.description = "Capture the subject in a short, one line title. This will appear at the top of the briefing pack."
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.record_type.name} - {self.display_name}"
 
 class CustomField(models.Model):
     FIELD_TYPES = [

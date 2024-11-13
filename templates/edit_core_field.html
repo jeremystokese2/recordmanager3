@@ -16,18 +16,20 @@
     <form method="post">
         {% csrf_token %}
         <div class="mb-3">
-            <label for="field_name" class="form-label">Field Name</label>
-            <input type="text" class="form-control" id="field_name" value="{{ field.name }}" readonly>
-        </div>
-        <div class="mb-3">
             <label for="display_name" class="form-label">Display Name</label>
             <input type="text" class="form-control" id="display_name" name="display_name" value="{{ field.display_name }}" required>
         </div>
+        {% if is_title_field %}
         <div class="mb-3">
-            <label for="field_type" class="form-label">Field Type</label>
-            <input type="text" class="form-control" id="field_type" value="{{ field.field_type }}" readonly>
+            <label for="description" class="form-label">Description</label>
+            <textarea class="form-control" id="description" name="description" rows="3" required>{{ field.description }}</textarea>
+            <div class="form-text">
+                This description will be shown to users when they are creating or editing records.
+            </div>
         </div>
+        {% endif %}
         <button type="submit" class="btn btn-primary">Update Core Field</button>
+        <a href="{% url 'record_fields' record_type=record_type.name %}" class="btn btn-secondary">Cancel</a>
     </form>
 </div>
 {% endblock %}

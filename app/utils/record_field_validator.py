@@ -272,8 +272,6 @@ def validate_record_field(field_data, record_types, all_fields):
                 'status': 'INFO',
                 'message': "Role field - will appear on People and Roles page"
             })
-
-        # Additional validations...
         
     except Exception as e:
         logger.error(f"Error validating field {field_name}: {str(e)}")

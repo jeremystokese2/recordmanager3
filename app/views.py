@@ -357,18 +357,28 @@ def edit_core_field(request, record_type, field_name):
     core_field = get_object_or_404(CoreField, record_type=record_type_obj, name=field_name)
     
     if request.method == 'POST':
-        new_display_name = request.POST.get('display_name')
-        if new_display_name:
-            core_field.display_name = new_display_name
+        display_name = request.POST.get('display_name')
+        description = request.POST.get('description')
+        
+        if display_name:
+            core_field.display_name = display_name
+            if field_name == 'title':
+                # For title field, allow description update but ensure it's not empty
+                if description:
+                    core_field.description = description
+            else:
+                core_field.description = description
+            
             core_field.save()
-            messages.success(request, f'Core field "{field_name}" display name updated successfully.')
+            messages.success(request, f'Core field "{field_name}" updated successfully.')
             return redirect('record_fields', record_type=record_type)
         else:
             messages.error(request, 'Please enter a valid display name.')
     
     return render(request, 'edit_core_field.html', {
         'record_type': record_type_obj,
-        'field': core_field
+        'field': core_field,
+        'is_title_field': field_name == 'title'
     })
 
 def delete_record_type(request, record_type):

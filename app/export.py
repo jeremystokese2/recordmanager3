@@ -56,44 +56,41 @@ def export_record_fields(record_type_obj, custom_fields, roles, core_fields):
     
     # Handle core fields
     for field in core_fields:
-        field_data = {
-            "PartitionKey": record_type_obj.name,
-            "RowKey": field.name,
-            "DisplayName": field.display_name,
-            "Description": "",
-            "FieldType": 1,  # Core fields are typically text type
-            "FiledType": 1,
-            "IsActive": True,
-            "IsRequired": True,
-            "IsNotRequiredOnCreation": False,
-            "NotEditable": False,
-            "Order": 0,
-            "ShowInHeader": False
-        }
-        export_data.append(field_data)
-    
-    # Handle custom fields
-    for field in custom_fields:
-        field_type = field.field_type
-        
-        field_data = {
-            "PartitionKey": record_type_obj.name,
-            "RowKey": field.name,
-            "DisplayName": field.display_name,
-            "Description": field.description or "",
-            "FieldType": field_type,
-            "FiledType": field_type,
-            "IsActive": field.is_active,
-            "IsRequired": field.is_mandatory,
-            "IsNotRequiredOnCreation": not field.visible_on_create,
-            "NotEditable": False,
-            "Order": field.order,
-            "ShowInHeader": field.show_in_header,
-            "WizardPosition": field.wizard_position,
-        }
+        if field.name == 'title':
+            field_data = {
+                "PartitionKey": record_type_obj.name,
+                "RowKey": field.name,
+                "DisplayName": field.display_name,
+                "Description": field.description,
+                "FieldType": 1,
+                "FiledType": 1,
+                "IsActive": True,
+                "IsRequired": True,
+                "IsNotRequiredOnCreation": False,
+                "NotEditable": False,
+                "Order": 0,
+                "ShowInHeader": False,
+                "WizardPosition": 0
+            }
+        else:
+            field_data = {
+                "PartitionKey": record_type_obj.name,
+                "RowKey": field.name,
+                "DisplayName": field.display_name,
+                "Description": field.description or "",
+                "FieldType": field.field_type,
+                "FiledType": field.field_type,
+                "IsActive": field.is_active,
+                "IsRequired": field.is_mandatory,
+                "IsNotRequiredOnCreation": not field.visible_on_create,
+                "NotEditable": False,
+                "Order": field.order,
+                "ShowInHeader": field.show_in_header,
+                "WizardPosition": field.wizard_position,
+            }
         
         # Check if field needs DataSourceName
-        if field_type in [2, 3, 10]:  # dropdown_single, dropdown_multi, radio
+        if field.field_type in [2, 3, 10]:  # dropdown_single, dropdown_multi, radio
             field_data["DataSourceName"] = field.term_set
             
         export_data.append(field_data)
