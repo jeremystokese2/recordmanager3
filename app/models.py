@@ -56,6 +56,11 @@ class CustomField(models.Model):
         ('combobox_multi', 'Combobox Multi Select'),
     ]
 
+    WIZARD_POSITIONS = [
+        (0, 'Record Information'),
+        (1, 'Record Response'),
+    ]
+
     record_type = models.ForeignKey(RecordType, on_delete=models.CASCADE, related_name='custom_fields')
     name = models.CharField(max_length=100)
     display_name = models.CharField(max_length=100, default='')
@@ -79,6 +84,11 @@ class CustomField(models.Model):
                 message='Term Set can only contain alphanumeric characters and spaces'
             )
         ]
+    )
+    wizard_position = models.IntegerField(
+        choices=WIZARD_POSITIONS,
+        default=0,
+        help_text="Page where this field will appear"
     )
 
     class Meta:

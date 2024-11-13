@@ -101,7 +101,8 @@ def export_record_fields(record_type_obj, custom_fields, roles, core_fields):
             "IsNotRequiredOnCreation": not field.visible_on_create,
             "NotEditable": False,
             "Order": field.order,
-            "ShowInHeader": field.show_in_header
+            "ShowInHeader": field.show_in_header,
+            "WizardPosition": field.wizard_position,
         }
         
         if field.field_type in ['dropdown_single', 'dropdown_multi', 'radio', 'combobox_single', 'combobox_multi']:

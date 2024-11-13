@@ -38,9 +38,19 @@
         </div>
 
         <div class="mb-3">
-            <label for="order" class="form-label">Order</label>
+            <label for="order" class="form-label">Display Order</label>
             <input type="number" class="form-control" id="order" name="order" value="{{ field.order }}">
         </div>
+
+        <div class="mb-3 wizard-position-group">
+            <label for="wizard_position" class="form-label">Page Location</label>
+            <select class="form-select" id="wizard_position" name="wizard_position" required>
+                <option value="0" {% if field.wizard_position == 0 %}selected{% endif %}>Record Information</option>
+                <option value="1" {% if field.wizard_position == 1 %}selected{% endif %}>Record Response</option>
+            </select>
+            <div class="form-text">Select which page this field should appear on</div>
+        </div>
+
 
         <div class="mb-3">
             <label for="term_set" class="form-label">Term Set</label>
@@ -83,4 +93,28 @@
         </div>
     </form>
 </div>
+
+<script>
+document.getElementById('field_type').addEventListener('change', function() {
+    const needsTermSet = ['dropdown_single', 'dropdown_multi', 'radio', 
+                         'combobox_single', 'combobox_multi'].includes(this.value);
+    const isRoleField = ['dropdown_single', 'dropdown_multi'].includes(this.value);
+    
+    document.querySelector('.term-set-group').style.display = needsTermSet ? 'block' : 'none';
+    document.getElementById('term_set').required = needsTermSet;
+    
+    // Hide wizard position for role fields
+    document.querySelector('.wizard-position-group').style.display = isRoleField ? 'none' : 'block';
+    document.getElementById('wizard_position').required = !isRoleField;
+});
+
+// Initialize on page load
+window.addEventListener('load', function() {
+    const fieldType = document.getElementById('field_type').value;
+    const isRoleField = ['dropdown_single', 'dropdown_multi'].includes(fieldType);
+    
+    document.querySelector('.wizard-position-group').style.display = isRoleField ? 'none' : 'block';
+    document.getElementById('wizard_position').required = !isRoleField;
+});
+</script>
 {% endblock %}

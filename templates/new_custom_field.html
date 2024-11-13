@@ -73,6 +73,22 @@
             <label for="order" class="form-label">Display Order</label>
             <input type="number" class="form-control" id="order" name="order" value="0">
         </div>
+        <div class="mb-3 wizard-position-group">
+            <label for="wizard_position" class="form-label">Page Location*</label>
+            <select class="form-select" id="wizard_position" name="wizard_position" required>
+                {% for value, label in form.wizard_position.field.choices %}
+                    <option value="{{ value }}" {% if form.wizard_position.value|default:'0' == value|stringformat:'s' %}selected{% endif %}>
+                        {{ label }}
+                    </option>
+                {% endfor %}
+            </select>
+            <div class="form-text">{{ form.wizard_position.help_text }}</div>
+            {% if form.wizard_position.errors %}
+            <div class="invalid-feedback">
+                {{ form.wizard_position.errors|join:", " }}
+            </div>
+            {% endif %}
+        </div>
         <div class="mb-3 form-check">
             <input type="checkbox" class="form-check-input" id="show_in_header" name="show_in_header">
             <label class="form-check-label" for="show_in_header">Show in Header</label>
@@ -106,8 +122,13 @@
 document.getElementById('field_type').addEventListener('change', function() {
     const needsTermSet = ['dropdown_single', 'dropdown_multi', 'radio', 
                          'combobox_single', 'combobox_multi'].includes(this.value);
+    const isRoleField = ['dropdown_single', 'dropdown_multi'].includes(this.value);
+    
     document.querySelector('.term-set-group').style.display = needsTermSet ? 'block' : 'none';
     document.getElementById('term_set').required = needsTermSet;
+    
+    document.querySelector('.wizard-position-group').style.display = isRoleField ? 'none' : 'block';
+    document.getElementById('wizard_position').required = !isRoleField;
 });
 
 document.getElementById('is_mandatory').addEventListener('change', function() {

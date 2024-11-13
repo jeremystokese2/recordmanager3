@@ -210,33 +210,17 @@ def new_custom_field(request, record_type):
     record_type_obj = get_object_or_404(RecordType, name=record_type)
     
     if request.method == 'POST':
-        # Debug print statements
-        print("POST data:", request.POST)
+        post_data = request.POST.copy()
+        post_data['name'] = post_data.get('field_name')
+        form = CustomFieldForm(post_data)
         
-        # Map the form field names to match the model field names
-        form_data = {
-            'name': request.POST.get('field_name'),
-            'display_name': request.POST.get('display_name'),
-            'field_type': request.POST.get('field_type'),
-            'description': request.POST.get('description'),
-            'order': request.POST.get('order'),
-            'show_in_header': request.POST.get('show_in_header') == 'on',
-            'is_mandatory': request.POST.get('is_mandatory') == 'on',
-            'visible_on_create': request.POST.get('visible_on_create') == 'on',
-            'term_set': request.POST.get('term_set', '')
-        }
-        
-        # Debug print statements
-        print("Processed form data:", form_data)
-        
-        form = CustomFieldForm(form_data)
         if form.is_valid():
             try:
                 custom_field = form.save(commit=False)
                 custom_field.record_type = record_type_obj
-                custom_field.full_clean()  # Additional validation
+                custom_field.full_clean()
                 custom_field.save()
-                messages.success(request, f'Field "{form_data["display_name"]}" created successfully!')
+                messages.success(request, f'Field "{form.cleaned_data["display_name"]}" created successfully!')
                 return redirect('record_fields', record_type=record_type)
             except ValidationError as e:
                 messages.error(request, str(e))
@@ -246,7 +230,7 @@ def new_custom_field(request, record_type):
                 for error in errors:
                     messages.error(request, f"{field}: {error}")
     else:
-        form = CustomFieldForm()
+        form = CustomFieldForm(initial={'wizard_position': 0})
 
     return render(request, 'new_custom_field.html', {
         'form': form,
