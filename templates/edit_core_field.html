@@ -19,7 +19,7 @@
             <label for="display_name" class="form-label">Display Name</label>
             <input type="text" class="form-control" id="display_name" name="display_name" value="{{ field.display_name }}" required>
         </div>
-        {% if is_title_field %}
+        {% if is_title_field or field.name == 'ABCTopicSummary' %}
         <div class="mb-3">
             <label for="description" class="form-label">Description</label>
             <textarea class="form-control" id="description" name="description" rows="3" required>{{ field.description }}</textarea>
@@ -28,8 +28,51 @@
             </div>
         </div>
         {% endif %}
+        {% if field.name == 'ABCTopicSummary' %}
+        <div class="mb-3 form-check">
+            <input type="checkbox" class="form-check-input" id="is_active" name="is_active" {% if field.is_active %}checked{% endif %}>
+            <label class="form-check-label" for="is_active">Active</label>
+            <div class="form-text">
+                If unchecked, this field will be hidden from users on both creation and details pages.
+            </div>
+        </div>
+        <div class="mb-3 form-check">
+            <input type="checkbox" class="form-check-input" id="is_mandatory" name="is_mandatory" {% if field.is_mandatory %}checked{% endif %}>
+            <label class="form-check-label" for="is_mandatory">Required</label>
+            <div class="form-text">
+                If checked, users must provide a value for this field when it is active.
+            </div>
+        </div>
+        {% endif %}
         <button type="submit" class="btn btn-primary">Update Core Field</button>
         <a href="{% url 'record_fields' record_type=record_type.name %}" class="btn btn-secondary">Cancel</a>
     </form>
 </div>
+
+{% if field.name == 'ABCTopicSummary' %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const isActiveCheckbox = document.getElementById('is_active');
+    const isMandatoryCheckbox = document.getElementById('is_mandatory');
+
+    // Function to enforce the rule
+    function enforceRules() {
+        if (isMandatoryCheckbox.checked && !isActiveCheckbox.checked) {
+            isActiveCheckbox.checked = true;
+        }
+    }
+
+    // Add event listener to mandatory checkbox
+    isMandatoryCheckbox.addEventListener('change', enforceRules);
+
+    // Add event listener to active checkbox
+    isActiveCheckbox.addEventListener('change', function() {
+        if (!this.checked && isMandatoryCheckbox.checked) {
+            alert('Cannot deactivate a required field. Please uncheck Required first.');
+            this.checked = true;
+        }
+    });
+});
+</script>
+{% endif %}
 {% endblock %}

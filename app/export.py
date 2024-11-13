@@ -72,6 +72,22 @@ def export_record_fields(record_type_obj, custom_fields, roles, core_fields):
                 "ShowInHeader": False,
                 "WizardPosition": 0
             }
+        elif field.name == 'ABCTopicSummary':
+            field_data = {
+                "PartitionKey": record_type_obj.name,
+                "RowKey": field.name,
+                "DisplayName": field.display_name,
+                "Description": field.description,
+                "FieldType": 1,
+                "FiledType": 1,
+                "IsActive": field.is_active,
+                "IsRequired": field.is_mandatory,
+                "IsNotRequiredOnCreation": not field.visible_on_create,
+                "NotEditable": False,
+                "Order": 1,
+                "ShowInHeader": False,
+                "WizardPosition": 0
+            }
         else:
             field_data = {
                 "PartitionKey": record_type_obj.name,

@@ -41,13 +41,20 @@ class CoreField(models.Model):
         null=True,
         validators=[MaxLengthValidator(300)]
     )
+    is_active = models.BooleanField(default=True)
+    is_mandatory = models.BooleanField(default=True)
+    visible_on_create = models.BooleanField(default=True)
 
     def save(self, *args, **kwargs):
-        # Special handling for Title field
+        # Special handling for Title and Topic fields
         if self.name == 'title':
             self.field_type = 'text'
             if not self.description:
                 self.description = "Capture the subject in a short, one line title. This will appear at the top of the briefing pack."
+        elif self.name == 'ABCTopicSummary':
+            self.field_type = 'text'
+            if not self.description:
+                self.description = "Summarise the issue and context into a concise sentence. This will appear in the final briefing pack and the Dashboard record entry."
         super().save(*args, **kwargs)
 
     def __str__(self):

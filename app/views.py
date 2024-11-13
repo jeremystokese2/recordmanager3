@@ -123,6 +123,17 @@ def create_record_type(request):
                     field_type='text'
                 )
                 
+                # Add the new Topic field
+                CoreField.objects.create(
+                    record_type=new_record_type,
+                    name='ABCTopicSummary',
+                    display_name='Topic',
+                    field_type='text',
+                    is_active=False,  # Hidden by default
+                    is_mandatory=False,  # Not required
+                    visible_on_create=False  # Synced with is_active
+                )
+                
                 # Create default roles
                 default_roles = [
                     {
@@ -362,12 +373,25 @@ def edit_core_field(request, record_type, field_name):
         
         if display_name:
             core_field.display_name = display_name
-            if field_name == 'title':
-                # For title field, allow description update but ensure it's not empty
+            
+            # Handle description for title and topic fields
+            if field_name in ['title', 'ABCTopicSummary']:
                 if description:
                     core_field.description = description
-            else:
-                core_field.description = description
+                    
+            # Handle additional fields for Topic field
+            if field_name == 'ABCTopicSummary':
+                is_active = request.POST.get('is_active') == 'on'
+                is_mandatory = request.POST.get('is_mandatory') == 'on'
+                
+                # If mandatory is true, force active to be true
+                if is_mandatory and not is_active:
+                    is_active = True
+                    messages.info(request, 'Field has been set to active because it is required.')
+                
+                core_field.is_active = is_active
+                core_field.visible_on_create = is_active  # Sync with is_active
+                core_field.is_mandatory = is_mandatory
             
             core_field.save()
             messages.success(request, f'Core field "{field_name}" updated successfully.')
