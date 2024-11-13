@@ -44,16 +44,16 @@ class CoreField(models.Model):
 
 class CustomField(models.Model):
     FIELD_TYPES = [
-        ('text', 'Text'),
-        ('textarea', 'Textarea'),
-        ('date', 'Date'),
-        ('datetime', 'Date and Time'),
-        ('time', 'Time'),
-        ('dropdown_single', 'Dropdown Single Select'),
-        ('dropdown_multi', 'Dropdown Multi Select'),
-        ('radio', 'Radio'),
-        ('combobox_single', 'Combobox Single Select'),
-        ('combobox_multi', 'Combobox Multi Select'),
+        (1, 'Text Input'),
+        (2, 'Single Select Dropdown'),
+        (3, 'Multi Select Dropdown'),
+        (4, 'Single User Role'),
+        (5, 'Date Only'),
+        (6, 'Time Only'),
+        (7, 'Date and Time'),
+        (8, 'Multi User Role'),
+        (9, 'Text Area'),
+        (10, 'Radio')
     ]
 
     WIZARD_POSITIONS = [
@@ -64,7 +64,7 @@ class CustomField(models.Model):
     record_type = models.ForeignKey(RecordType, on_delete=models.CASCADE, related_name='custom_fields')
     name = models.CharField(max_length=100)
     display_name = models.CharField(max_length=100, default='')
-    field_type = models.CharField(max_length=20, choices=FIELD_TYPES)
+    field_type = models.IntegerField(choices=FIELD_TYPES)
     description = models.CharField(
         max_length=300, 
         blank=True,

@@ -60,7 +60,9 @@
             <label for="field_type" class="form-label">Field Type*</label>
             <select class="form-select" id="field_type" name="field_type" required>
                 {% for value, label in field_types %}
-                <option value="{{ value }}">{{ label }}</option>
+                    {% if value != 4 and value != 8 %}
+                        <option value="{{ value }}">{{ label }}</option>
+                    {% endif %}
                 {% endfor %}
             </select>
         </div>
@@ -110,9 +112,10 @@
             {% endif %}
         </div>
         <div class="mb-3 term-set-group" style="display: none;">
-            <label for="term_set" class="form-label">Term Set*</label>
+            <label for="term_set" class="form-label">Data Source Name*</label>
             <input type="text" class="form-control" id="term_set" name="term_set" 
                    pattern="^[A-Za-z0-9\s]*$" title="Only alphanumeric characters and spaces allowed">
+            <div class="form-text">Enter the exact name of the Term Set this field should draw values from. Term Sets must be created manually in the SharePoint environment.</div>
         </div>
         <button type="submit" class="btn btn-primary">Add Field</button>
     </form>
@@ -120,15 +123,9 @@
 
 <script>
 document.getElementById('field_type').addEventListener('change', function() {
-    const needsTermSet = ['dropdown_single', 'dropdown_multi', 'radio', 
-                         'combobox_single', 'combobox_multi'].includes(this.value);
-    const isRoleField = ['dropdown_single', 'dropdown_multi'].includes(this.value);
-    
+    const needsTermSet = [2, 3, 10].includes(parseInt(this.value));
     document.querySelector('.term-set-group').style.display = needsTermSet ? 'block' : 'none';
     document.getElementById('term_set').required = needsTermSet;
-    
-    document.querySelector('.wizard-position-group').style.display = isRoleField ? 'none' : 'block';
-    document.getElementById('wizard_position').required = !isRoleField;
 });
 
 document.getElementById('is_mandatory').addEventListener('change', function() {
@@ -161,8 +158,7 @@ window.addEventListener('load', function() {
     }
     
     const fieldType = document.getElementById('field_type');
-    const needsTermSet = ['dropdown_single', 'dropdown_multi', 'radio', 
-                         'combobox_single', 'combobox_multi'].includes(fieldType.value);
+    const needsTermSet = [2, 3, 10].includes(parseInt(fieldType.value));
     document.querySelector('.term-set-group').style.display = needsTermSet ? 'block' : 'none';
     document.getElementById('term_set').required = needsTermSet;
 });

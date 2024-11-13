@@ -25,9 +25,11 @@
             <label for="field_type" class="form-label">Field Type</label>
             <select class="form-select" id="field_type" name="field_type" required>
                 {% for type_value, type_label in field_types %}
-                    <option value="{{ type_value }}" {% if field.field_type == type_value %}selected{% endif %}>
-                        {{ type_label }}
-                    </option>
+                    {% if type_value != 4 and type_value != 8 %}
+                        <option value="{{ type_value }}" {% if field.field_type == type_value %}selected{% endif %}>
+                            {{ type_label }}
+                        </option>
+                    {% endif %}
                 {% endfor %}
             </select>
         </div>
@@ -52,10 +54,10 @@
         </div>
 
 
-        <div class="mb-3">
-            <label for="term_set" class="form-label">Term Set</label>
+        <div class="mb-3 term-set-group" style="display: none;">
+            <label for="term_set" class="form-label">Data Source Name</label>
             <input type="text" class="form-control" id="term_set" name="term_set" value="{{ field.term_set }}">
-            <div class="form-text">Required for dropdown, radio, and combobox fields</div>
+            <div class="form-text">Enter the exact name of the Term Set this field should draw values from. Term Sets must be created manually in the SharePoint environment.</div>
         </div>
 
         <div class="mb-3 form-check">
@@ -96,25 +98,9 @@
 
 <script>
 document.getElementById('field_type').addEventListener('change', function() {
-    const needsTermSet = ['dropdown_single', 'dropdown_multi', 'radio', 
-                         'combobox_single', 'combobox_multi'].includes(this.value);
-    const isRoleField = ['dropdown_single', 'dropdown_multi'].includes(this.value);
-    
+    const needsTermSet = [2, 3, 10].includes(parseInt(this.value));
     document.querySelector('.term-set-group').style.display = needsTermSet ? 'block' : 'none';
     document.getElementById('term_set').required = needsTermSet;
-    
-    // Hide wizard position for role fields
-    document.querySelector('.wizard-position-group').style.display = isRoleField ? 'none' : 'block';
-    document.getElementById('wizard_position').required = !isRoleField;
-});
-
-// Initialize on page load
-window.addEventListener('load', function() {
-    const fieldType = document.getElementById('field_type').value;
-    const isRoleField = ['dropdown_single', 'dropdown_multi'].includes(fieldType);
-    
-    document.querySelector('.wizard-position-group').style.display = isRoleField ? 'none' : 'block';
-    document.getElementById('wizard_position').required = !isRoleField;
 });
 </script>
 {% endblock %}

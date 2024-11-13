@@ -80,31 +80,17 @@ class CustomFieldForm(forms.ModelForm):
         field_type = cleaned_data.get('field_type')
         term_set = cleaned_data.get('term_set')
 
-        # Debug print statements
-        print(f"Form validation - is_mandatory: {is_mandatory}, visible_on_create: {visible_on_create}")
-
         if is_mandatory and not visible_on_create:
             raise forms.ValidationError({
                 'visible_on_create': 'Mandatory fields must be visible on creation wizard'
             })
 
-        needs_term_set = field_type in [
-            'dropdown_single', 'dropdown_multi', 
-            'radio', 'combobox_single', 'combobox_multi'
-        ]
+        needs_term_set = field_type in [2, 3, 10]  # dropdown_single, dropdown_multi, radio
 
         if needs_term_set and not term_set:
             raise forms.ValidationError({
-                'term_set': 'Term Set is required for this field type'
+                'term_set': 'Data Source Name is required for this field type'
             })
-
-        # Skip wizard position validation for role fields
-        if field_type in ['dropdown_single', 'dropdown_multi', 'radio', 'combobox_single', 'combobox_multi']:
-            wizard_position = cleaned_data.get('wizard_position')
-            if wizard_position not in [0, 1]:
-                raise forms.ValidationError({
-                    'wizard_position': 'Invalid wizard position. Must be Record Information (0) or Record Response (1)'
-                })
 
         return cleaned_data 
 

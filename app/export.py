@@ -75,18 +75,7 @@ def export_record_fields(record_type_obj, custom_fields, roles, core_fields):
     
     # Handle custom fields
     for field in custom_fields:
-        field_type = {
-            'text': 1,
-            'textarea': 2,
-            'date': 5,
-            'datetime': 7,
-            'time': 6,
-            'dropdown_single': 2,
-            'dropdown_multi': 3,
-            'radio': 10,
-            'combobox_single': 2,
-            'combobox_multi': 3,
-        }.get(field.field_type, 1)
+        field_type = field.field_type  # Now field_type is already an integer
         
         field_data = {
             "odata.type": "briefconnectabcsa.RecordFields",
@@ -105,7 +94,8 @@ def export_record_fields(record_type_obj, custom_fields, roles, core_fields):
             "WizardPosition": field.wizard_position,
         }
         
-        if field.field_type in ['dropdown_single', 'dropdown_multi', 'radio', 'combobox_single', 'combobox_multi']:
+        # Check if field needs DataSourceName
+        if field_type in [2, 3, 10]:  # dropdown_single, dropdown_multi, radio
             field_data["DataSourceName"] = field.term_set
             
         export_data.append(field_data)
