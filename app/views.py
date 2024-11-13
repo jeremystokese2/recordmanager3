@@ -31,6 +31,7 @@ from .utils.constants import (
     IGNORED_SP_FIELDS,
     IGNORED_STATE_FIELDS
 )
+from .forms import CustomFieldForm
 
 logger = logging.getLogger('django.request')
 
@@ -209,47 +210,46 @@ def new_custom_field(request, record_type):
     record_type_obj = get_object_or_404(RecordType, name=record_type)
     
     if request.method == 'POST':
-        try:
-            field_name = request.POST.get('field_name')
-            display_name = request.POST.get('display_name')
-            field_type = request.POST.get('field_type')
-            description = request.POST.get('description', '')
-            order = request.POST.get('order', 0)
-            show_in_header = request.POST.get('show_in_header') == 'on'
-            is_mandatory = request.POST.get('is_mandatory') == 'on'
-            visible_on_create = request.POST.get('visible_on_create') == 'on'
-            term_set = request.POST.get('term_set', '').strip()
-
+        # Debug print statements
+        print("POST data:", request.POST)
+        
+        # Map the form field names to match the model field names
+        form_data = {
+            'name': request.POST.get('field_name'),
+            'display_name': request.POST.get('display_name'),
+            'field_type': request.POST.get('field_type'),
+            'description': request.POST.get('description'),
+            'order': request.POST.get('order'),
+            'show_in_header': request.POST.get('show_in_header') == 'on',
+            'is_mandatory': request.POST.get('is_mandatory') == 'on',
+            'visible_on_create': request.POST.get('visible_on_create') == 'on',
+            'term_set': request.POST.get('term_set', '')
+        }
+        
+        # Debug print statements
+        print("Processed form data:", form_data)
+        
+        form = CustomFieldForm(form_data)
+        if form.is_valid():
             try:
-                order = int(order)
-            except (ValueError, TypeError):
-                order = 0
+                custom_field = form.save(commit=False)
+                custom_field.record_type = record_type_obj
+                custom_field.full_clean()  # Additional validation
+                custom_field.save()
+                messages.success(request, f'Field "{form_data["display_name"]}" created successfully!')
+                return redirect('record_fields', record_type=record_type)
+            except ValidationError as e:
+                messages.error(request, str(e))
+        else:
+            print("Form errors:", form.errors)
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f"{field}: {error}")
+    else:
+        form = CustomFieldForm()
 
-            custom_field = CustomField(
-                record_type=record_type_obj,
-                name=field_name,
-                display_name=display_name,
-                field_type=field_type,
-                description=description,
-                order=order,
-                show_in_header=show_in_header,
-                is_mandatory=is_mandatory,
-                visible_on_create=visible_on_create,
-                term_set=term_set
-            )
-            
-            custom_field.full_clean()  # This will run validators
-            custom_field.save()
-            
-            messages.success(request, f'Custom field "{field_name}" added successfully!')
-            return redirect('record_fields', record_type=record_type)
-            
-        except ValidationError as e:
-            messages.error(request, '; '.join(e.messages))
-        except Exception as e:
-            messages.error(request, str(e))
-    
     return render(request, 'new_custom_field.html', {
+        'form': form,
         'record_type': record_type,
         'field_types': CustomField.FIELD_TYPES
     })

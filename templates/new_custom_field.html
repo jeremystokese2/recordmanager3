@@ -13,15 +13,48 @@
 {% block content %}
 <div class="container mt-4">
     <h2>Add Custom Field for {{ record_type }}</h2>
+    
+    {% if messages %}
+    <div class="messages">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if form.non_field_errors %}
+    <div class="alert alert-danger">
+        {% for error in form.non_field_errors %}
+            {{ error }}
+        {% endfor %}
+    </div>
+    {% endif %}
+    
     <form method="POST">
         {% csrf_token %}
         <div class="mb-3">
             <label for="field_name" class="form-label">Field Name*</label>
-            <input type="text" class="form-control" id="field_name" name="field_name" required>
+            <input type="text" class="form-control {% if form.name.errors %}is-invalid{% endif %}" 
+                   id="field_name" name="field_name" required 
+                   value="{{ request.POST.field_name }}">
+            {% if form.name.errors %}
+            <div class="invalid-feedback">
+                {{ form.name.errors|join:", " }}
+            </div>
+            {% endif %}
         </div>
         <div class="mb-3">
             <label for="display_name" class="form-label">Display Name*</label>
-            <input type="text" class="form-control" id="display_name" name="display_name" required>
+            <input type="text" class="form-control {% if form.display_name.errors %}is-invalid{% endif %}" 
+                   id="display_name" name="display_name" required 
+                   value="{{ request.POST.display_name }}">
+            {% if form.display_name.errors %}
+            <div class="invalid-feedback">
+                {{ form.display_name.errors|join:", " }}
+            </div>
+            {% endif %}
         </div>
         <div class="mb-3">
             <label for="field_type" class="form-label">Field Type*</label>
@@ -45,12 +78,20 @@
             <label class="form-check-label" for="show_in_header">Show in Header</label>
         </div>
         <div class="mb-3 form-check">
-            <input type="checkbox" class="form-check-input" id="is_mandatory" name="is_mandatory">
+            <input type="checkbox" class="form-check-input" id="is_mandatory" name="is_mandatory"
+                   {% if request.POST.is_mandatory %}checked{% endif %}>
             <label class="form-check-label" for="is_mandatory">Mandatory Field</label>
         </div>
         <div class="mb-3 form-check">
-            <input type="checkbox" class="form-check-input" id="visible_on_create" name="visible_on_create" checked>
+            <input type="checkbox" class="form-check-input {% if form.visible_on_create.errors %}is-invalid{% endif %}" 
+                   id="visible_on_create" name="visible_on_create" 
+                   {% if request.POST.visible_on_create|default:True %}checked{% endif %}>
             <label class="form-check-label" for="visible_on_create">Visible on Creation</label>
+            {% if form.visible_on_create.errors %}
+            <div class="invalid-feedback">
+                {{ form.visible_on_create.errors|join:", " }}
+            </div>
+            {% endif %}
         </div>
         <div class="mb-3 term-set-group" style="display: none;">
             <label for="term_set" class="form-label">Term Set*</label>
@@ -70,12 +111,39 @@ document.getElementById('field_type').addEventListener('change', function() {
 });
 
 document.getElementById('is_mandatory').addEventListener('change', function() {
+    const visibleOnCreate = document.getElementById('visible_on_create');
+    const helpText = document.getElementById('visible_create_help');
+    
     if (this.checked) {
-        document.getElementById('visible_on_create').checked = true;
-        document.getElementById('visible_on_create').disabled = true;
+        visibleOnCreate.checked = true;
+        if (helpText) helpText.style.display = 'block';
     } else {
-        document.getElementById('visible_on_create').disabled = false;
+        if (helpText) helpText.style.display = 'none';
     }
+});
+
+document.querySelector('form').addEventListener('submit', function(e) {
+    const isMandatory = document.getElementById('is_mandatory').checked;
+    const visibleOnCreate = document.getElementById('visible_on_create');
+    
+    if (isMandatory) {
+        visibleOnCreate.checked = true;
+    }
+});
+
+window.addEventListener('load', function() {
+    const isMandatory = document.getElementById('is_mandatory');
+    const visibleOnCreate = document.getElementById('visible_on_create');
+    
+    if (isMandatory.checked) {
+        visibleOnCreate.checked = true;
+    }
+    
+    const fieldType = document.getElementById('field_type');
+    const needsTermSet = ['dropdown_single', 'dropdown_multi', 'radio', 
+                         'combobox_single', 'combobox_multi'].includes(fieldType.value);
+    document.querySelector('.term-set-group').style.display = needsTermSet ? 'block' : 'none';
+    document.getElementById('term_set').required = needsTermSet;
 });
 </script>
 {% endblock %}
