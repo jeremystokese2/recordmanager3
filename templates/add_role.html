@@ -13,37 +13,94 @@
 {% block content %}
 <div class="container mt-4">
     <h2>Add Role for {{ record_type }}</h2>
+    
+    {% if messages %}
+    <div class="messages">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
     <form method="POST">
         {% csrf_token %}
         <div class="mb-3">
             <label for="name" class="form-label">Role Name*</label>
-            <input type="text" class="form-control" id="name" name="name" required>
+            <input type="text" class="form-control {% if form.name.errors %}is-invalid{% endif %}" 
+                   id="name" name="name" value="{{ form.name.value|default:'' }}" required>
+            {% if form.name.errors %}
+            <div class="invalid-feedback">
+                {{ form.name.errors|join:", " }}
+            </div>
+            {% endif %}
         </div>
+        
         <div class="mb-3">
             <label for="display_name" class="form-label">Display Name*</label>
-            <input type="text" class="form-control" id="display_name" name="display_name" required>
+            <input type="text" class="form-control {% if form.display_name.errors %}is-invalid{% endif %}" 
+                   id="display_name" name="display_name" value="{{ form.display_name.value|default:'' }}" required>
+            {% if form.display_name.errors %}
+            <div class="invalid-feedback">
+                {{ form.display_name.errors|join:", " }}
+            </div>
+            {% endif %}
         </div>
+        
         <div class="mb-3">
             <label for="description" class="form-label">Description</label>
-            <textarea class="form-control" id="description" name="description" 
-                      maxlength="300" placeholder="Supports basic markdown (bold, links, and lists)"></textarea>
+            <textarea class="form-control {% if form.description.errors %}is-invalid{% endif %}" 
+                      id="description" name="description" maxlength="300" 
+                      placeholder="Supports basic markdown (bold, links, and lists)">{{ form.description.value|default:'' }}</textarea>
+            {% if form.description.errors %}
+            <div class="invalid-feedback">
+                {{ form.description.errors|join:", " }}
+            </div>
+            {% endif %}
         </div>
+        
         <div class="mb-3">
             <label for="stage" class="form-label">Stage*</label>
-            <select class="form-select" id="stage" name="stage" required>
+            <select class="form-select {% if form.stage.errors %}is-invalid{% endif %}" 
+                    id="stage" name="stage" required>
                 {% for stage in stages %}
-                <option value="{{ stage.id }}">{{ stage.name }}</option>
+                <option value="{{ stage.id }}" 
+                        {% if form.stage.value|stringformat:"s" == stage.id|stringformat:"s" %}selected{% endif %}>
+                    {{ stage.name }}
+                </option>
                 {% endfor %}
             </select>
+            {% if form.stage.errors %}
+            <div class="invalid-feedback">
+                {{ form.stage.errors|join:", " }}
+            </div>
+            {% endif %}
         </div>
+        
         <div class="mb-3">
             <label for="order" class="form-label">Display Order</label>
-            <input type="number" class="form-control" id="order" name="order" value="0">
+            <input type="number" class="form-control {% if form.order.errors %}is-invalid{% endif %}" 
+                   id="order" name="order" value="{{ form.order.value|default:'0' }}">
+            {% if form.order.errors %}
+            <div class="invalid-feedback">
+                {{ form.order.errors|join:", " }}
+            </div>
+            {% endif %}
         </div>
+        
         <div class="mb-3 form-check">
-            <input type="checkbox" class="form-check-input" id="allow_multiple" name="allow_multiple">
+            <input type="checkbox" class="form-check-input {% if form.allow_multiple.errors %}is-invalid{% endif %}" 
+                   id="allow_multiple" name="allow_multiple" 
+                   {% if form.allow_multiple.value %}checked{% endif %}>
             <label class="form-check-label" for="allow_multiple">Allow Multiple Users</label>
+            {% if form.allow_multiple.errors %}
+            <div class="invalid-feedback">
+                {{ form.allow_multiple.errors|join:", " }}
+            </div>
+            {% endif %}
         </div>
+        
         <button type="submit" class="btn btn-primary">Add Role</button>
     </form>
 </div>

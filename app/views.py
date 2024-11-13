@@ -31,7 +31,7 @@ from .utils.constants import (
     IGNORED_SP_FIELDS,
     IGNORED_STATE_FIELDS
 )
-from .forms import CustomFieldForm
+from .forms import CustomFieldForm, RoleForm
 
 logger = logging.getLogger('django.request')
 
@@ -212,7 +212,7 @@ def new_custom_field(request, record_type):
     if request.method == 'POST':
         post_data = request.POST.copy()
         post_data['name'] = post_data.get('field_name')
-        form = CustomFieldForm(post_data)
+        form = CustomFieldForm(post_data, record_type=record_type_obj)
         
         if form.is_valid():
             try:
@@ -225,12 +225,11 @@ def new_custom_field(request, record_type):
             except ValidationError as e:
                 messages.error(request, str(e))
         else:
-            print("Form errors:", form.errors)
             for field, errors in form.errors.items():
                 for error in errors:
                     messages.error(request, f"{field}: {error}")
     else:
-        form = CustomFieldForm(initial={'wizard_position': 0})
+        form = CustomFieldForm(record_type=record_type_obj, initial={'wizard_position': 0})
 
     return render(request, 'new_custom_field.html', {
         'form': form,
@@ -244,50 +243,23 @@ def edit_custom_field(request, record_type, field_name):
     
     if request.method == 'POST':
         if 'delete' in request.POST:
-            # Delete the field
             custom_field.delete()
             messages.success(request, f'Field "{field_name}" deleted successfully.')
             return redirect('record_fields', record_type=record_type)
-        else:
-            # Update the field
-            display_name = request.POST.get('display_name')
-            field_type = request.POST.get('field_type')
-            description = request.POST.get('description', '')
-            order = request.POST.get('order', custom_field.order)
-            show_in_header = request.POST.get('show_in_header') == 'on'
-            is_mandatory = request.POST.get('is_mandatory') == 'on'
-            visible_on_create = request.POST.get('visible_on_create') == 'on'
-            is_active = request.POST.get('is_active') == 'on'
-            term_set = request.POST.get('term_set', '').strip()
-            
+        
+        form = CustomFieldForm(request.POST, instance=custom_field, record_type=record_type_obj)
+        if form.is_valid():
             try:
-                order = int(order)
-            except (ValueError, TypeError):
-                order = custom_field.order
-
-            if display_name and field_type:
-                try:
-                    custom_field.display_name = display_name
-                    custom_field.field_type = field_type
-                    custom_field.description = description
-                    custom_field.order = order
-                    custom_field.show_in_header = show_in_header
-                    custom_field.is_mandatory = is_mandatory
-                    custom_field.visible_on_create = visible_on_create
-                    custom_field.is_active = is_active
-                    custom_field.term_set = term_set
-                    
-                    custom_field.full_clean()  # Validate the field
-                    custom_field.save()
-                    
-                    messages.success(request, f'Field "{display_name}" updated successfully.')
-                    return redirect('record_fields', record_type=record_type)
-                except ValidationError as e:
-                    messages.error(request, '; '.join(e.messages))
-            else:
-                messages.error(request, 'Please enter valid field details.')
+                form.save()
+                messages.success(request, f'Field "{form.cleaned_data["display_name"]}" updated successfully.')
+                return redirect('record_fields', record_type=record_type)
+            except ValidationError as e:
+                messages.error(request, str(e))
+    else:
+        form = CustomFieldForm(instance=custom_field, record_type=record_type_obj)
     
     return render(request, 'edit_custom_field.html', {
+        'form': form,
         'record_type': record_type_obj,
         'field': custom_field,
         'field_types': CustomField.FIELD_TYPES
@@ -414,47 +386,25 @@ def add_role(request, record_type):
     stages = record_type_obj.stages.exclude(name='Closed')
     
     if request.method == 'POST':
-        name = request.POST.get('name')
-        display_name = request.POST.get('display_name')
-        description = request.POST.get('description', '')
-        stage_id = request.POST.get('stage')
-        order = request.POST.get('order', 0)
-        allow_multiple = request.POST.get('allow_multiple') == 'on'
-        
-        try:
-            order = int(order)
-        except (ValueError, TypeError):
-            order = 0
-        
-        if name and display_name and stage_id:
+        form = RoleForm(request.POST, record_type=record_type_obj)
+        if form.is_valid():
             try:
-                stage = Stage.objects.get(id=stage_id, record_type=record_type_obj)
-                if stage.name == 'Closed':
-                    messages.error(request, 'Roles cannot be assigned to the Closed stage.')
-                    return render(request, 'add_role.html', {
-                        'record_type': record_type_obj,
-                        'stages': stages
-                    })
-                
-                Role.objects.create(
-                    record_type=record_type_obj,
-                    name=name,
-                    display_name=display_name,
-                    description=description,
-                    stage=stage,
-                    order=order,
-                    allow_multiple=allow_multiple
-                )
-                messages.success(request, f'Role "{display_name}" created successfully!')
+                role = form.save(commit=False)
+                role.record_type = record_type_obj
+                role.save()
+                messages.success(request, f'Role "{form.cleaned_data["display_name"]}" created successfully!')
                 return redirect('record_fields', record_type=record_type)
-            except IntegrityError:
-                messages.error(request, f'A role with the name "{name}" already exists for this record type.')
-            except Stage.DoesNotExist:
-                messages.error(request, 'Invalid stage selected.')
+            except ValidationError as e:
+                messages.error(request, str(e))
         else:
-            messages.error(request, 'Please fill in all required fields.')
-    
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f"{field}: {error}")
+    else:
+        form = RoleForm(record_type=record_type_obj)
+
     return render(request, 'add_role.html', {
+        'form': form,
         'record_type': record_type_obj,
         'stages': stages
     })
