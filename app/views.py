@@ -257,7 +257,7 @@ def edit_custom_field(request, record_type, field_name):
             show_in_header = request.POST.get('show_in_header') == 'on'
             is_mandatory = request.POST.get('is_mandatory') == 'on'
             visible_on_create = request.POST.get('visible_on_create') == 'on'
-            is_active = request.POST.get('is_active') == 'on'  # Add this line
+            is_active = request.POST.get('is_active') == 'on'
             term_set = request.POST.get('term_set', '').strip()
             
             try:
@@ -274,13 +274,13 @@ def edit_custom_field(request, record_type, field_name):
                     custom_field.show_in_header = show_in_header
                     custom_field.is_mandatory = is_mandatory
                     custom_field.visible_on_create = visible_on_create
-                    custom_field.is_active = is_active  # Add this line
+                    custom_field.is_active = is_active
                     custom_field.term_set = term_set
                     
                     custom_field.full_clean()  # Validate the field
                     custom_field.save()
                     
-                    messages.success(request, f'Field "{field_name}" updated successfully.')
+                    messages.success(request, f'Field "{display_name}" updated successfully.')
                     return redirect('record_fields', record_type=record_type)
                 except ValidationError as e:
                     messages.error(request, '; '.join(e.messages))
@@ -288,7 +288,7 @@ def edit_custom_field(request, record_type, field_name):
                 messages.error(request, 'Please enter valid field details.')
     
     return render(request, 'edit_custom_field.html', {
-        'record_type': record_type,
+        'record_type': record_type_obj,
         'field': custom_field,
         'field_types': CustomField.FIELD_TYPES
     })
