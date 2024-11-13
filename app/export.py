@@ -57,7 +57,6 @@ def export_record_fields(record_type_obj, custom_fields, roles, core_fields):
     # Handle core fields
     for field in core_fields:
         field_data = {
-            "odata.type": "briefconnectabcsa.RecordFields",
             "PartitionKey": record_type_obj.name,
             "RowKey": field.name,
             "DisplayName": field.display_name,
@@ -75,10 +74,9 @@ def export_record_fields(record_type_obj, custom_fields, roles, core_fields):
     
     # Handle custom fields
     for field in custom_fields:
-        field_type = field.field_type  # Now field_type is already an integer
+        field_type = field.field_type
         
         field_data = {
-            "odata.type": "briefconnectabcsa.RecordFields",
             "PartitionKey": record_type_obj.name,
             "RowKey": field.name,
             "DisplayName": field.display_name,
@@ -103,7 +101,6 @@ def export_record_fields(record_type_obj, custom_fields, roles, core_fields):
     # Handle roles
     for role in roles:
         field_data = {
-            "odata.type": "briefconnectabcsa.RecordFields",
             "PartitionKey": record_type_obj.name,
             "RowKey": role.name,
             "DisplayName": role.display_name,
@@ -111,7 +108,7 @@ def export_record_fields(record_type_obj, custom_fields, roles, core_fields):
             "FieldType": 8 if role.allow_multiple else 4,
             "FiledType": 8 if role.allow_multiple else 4,
             "IsActive": role.is_active,
-            "IsRequired": role.is_mandatory,  # Changed this line
+            "IsRequired": role.is_mandatory,
             "IsNotRequiredOnCreation": False,
             "NotEditable": False,
             "Order": role.order,
