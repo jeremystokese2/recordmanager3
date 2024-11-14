@@ -72,6 +72,26 @@ class CoreField(models.Model):
                 self.display_name = "Requested by"
             if not self.term_set:
                 self.term_set = "Request From"
+        elif self.name == 'ABCDateRequested':
+            self.field_type = 'date'
+            if not self.display_name:
+                self.display_name = "Date requested"
+        elif self.name == 'ABCTimeframe':
+            self.field_type = 'radio'
+            if not self.display_name:
+                self.display_name = "Timeframe"
+            if not self.description:
+                self.description = "Due dates populate automatically based on the timeframe you select. They can be edited anytime."
+            if not self.term_set:
+                self.term_set = "Timeframe"
+        elif self.name == 'ABCDecisionCategory':
+            self.field_type = 'dropdown_single'
+            if not self.display_name:
+                self.display_name = "Decision Category"
+            if not self.description:
+                self.description = "Select based on who the Decision Maker is."
+            if not self.term_set:
+                self.term_set = "Decision Category"
         super().save(*args, **kwargs)
 
     def __str__(self):

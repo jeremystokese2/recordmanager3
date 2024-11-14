@@ -146,6 +146,43 @@ def create_record_type(request):
                     visible_on_create=False
                 )
                 
+                # Add the new Date Requested field
+                CoreField.objects.create(
+                    record_type=new_record_type,
+                    name='ABCDateRequested',
+                    display_name='Date requested',
+                    field_type='date',
+                    is_active=False,  # Hidden by default
+                    is_mandatory=False,  # Not required
+                    visible_on_create=False  # Synced with is_active
+                )
+                
+                # Add the new Timeframe field
+                CoreField.objects.create(
+                    record_type=new_record_type,
+                    name='ABCTimeframe',
+                    display_name='Timeframe',
+                    field_type='radio',
+                    description="Due dates populate automatically based on the timeframe you select. They can be edited anytime.",
+                    term_set='Timeframe',
+                    is_active=False,
+                    is_mandatory=False,
+                    visible_on_create=False
+                )
+                
+                # Add the Decision Category field
+                CoreField.objects.create(
+                    record_type=new_record_type,
+                    name='ABCDecisionCategory',
+                    display_name='Decision Category',
+                    field_type='dropdown_single',
+                    description="Select based on who the Decision Maker is.",
+                    term_set='Decision Category',
+                    is_active=False,
+                    is_mandatory=False,
+                    visible_on_create=False
+                )
+                
                 # Create default roles
                 default_roles = [
                     {
@@ -386,13 +423,12 @@ def edit_core_field(request, record_type, field_name):
         if display_name:
             core_field.display_name = display_name
             
-            # Handle description for title, topic, and request from fields
-            if field_name in ['title', 'ABCTopicSummary', 'ABCRequestFrom']:
-                if description:
-                    core_field.description = description
+            # Handle description for all editable fields
+            if field_name in ['title', 'ABCTopicSummary', 'ABCRequestFrom', 'ABCDateRequested', 'ABCTimeframe', 'ABCDecisionCategory']:
+                core_field.description = description
                     
-            # Handle additional fields for Topic and Request From fields
-            if field_name in ['ABCTopicSummary', 'ABCRequestFrom']:
+            # Handle additional fields for Topic, Request From, Date Requested, Timeframe, and Decision Category fields
+            if field_name in ['ABCTopicSummary', 'ABCRequestFrom', 'ABCDateRequested', 'ABCTimeframe', 'ABCDecisionCategory']:
                 is_active = request.POST.get('is_active') == 'on'
                 is_mandatory = request.POST.get('is_mandatory') == 'on'
                 
@@ -405,8 +441,8 @@ def edit_core_field(request, record_type, field_name):
                 core_field.visible_on_create = is_active  # Sync with is_active
                 core_field.is_mandatory = is_mandatory
                 
-                # Handle term_set for ABCRequestFrom
-                if field_name == 'ABCRequestFrom':
+                # Handle term_set for fields that need it
+                if field_name in ['ABCRequestFrom', 'ABCTimeframe', 'ABCDecisionCategory']:
                     term_set = request.POST.get('term_set')
                     if term_set:
                         core_field.term_set = term_set

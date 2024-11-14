@@ -19,7 +19,7 @@
             <label for="display_name" class="form-label">Display Name</label>
             <input type="text" class="form-control" id="display_name" name="display_name" value="{{ field.display_name }}" required>
         </div>
-        {% if is_title_field or field.name == 'ABCTopicSummary' or field.name == 'ABCRequestFrom' %}
+        {% if is_title_field or field.name == 'ABCTopicSummary' or field.name == 'ABCRequestFrom' or field.name == 'ABCDateRequested' or field.name == 'ABCTimeframe' or field.name == 'ABCDecisionCategory' %}
         <div class="mb-3">
             <label for="description" class="form-label">Description</label>
             <textarea class="form-control" id="description" name="description" rows="3">{{ field.description }}</textarea>
@@ -28,7 +28,7 @@
             </div>
         </div>
         {% endif %}
-        {% if field.name == 'ABCRequestFrom' %}
+        {% if field.name == 'ABCRequestFrom' or field.name == 'ABCTimeframe' or field.name == 'ABCDecisionCategory' %}
         <div class="mb-3">
             <label for="term_set" class="form-label">Data Source Name</label>
             <input type="text" class="form-control" id="term_set" name="term_set" value="{{ field.term_set }}" required>
@@ -37,7 +37,7 @@
             </div>
         </div>
         {% endif %}
-        {% if field.name == 'ABCTopicSummary' or field.name == 'ABCRequestFrom' %}
+        {% if field.name == 'ABCTopicSummary' or field.name == 'ABCRequestFrom' or field.name == 'ABCDateRequested' or field.name == 'ABCTimeframe' or field.name == 'ABCDecisionCategory' %}
         <div class="mb-3 form-check">
             <input type="checkbox" class="form-check-input" id="is_active" name="is_active" {% if field.is_active %}checked{% endif %}>
             <label class="form-check-label" for="is_active">Active</label>
@@ -58,7 +58,7 @@
     </form>
 </div>
 
-{% if field.name == 'ABCTopicSummary' or field.name == 'ABCRequestFrom' %}
+{% if field.name == 'ABCTopicSummary' or field.name == 'ABCRequestFrom' or field.name == 'ABCDateRequested' or field.name == 'ABCTimeframe' or field.name == 'ABCDecisionCategory' %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const isActiveCheckbox = document.getElementById('is_active');
