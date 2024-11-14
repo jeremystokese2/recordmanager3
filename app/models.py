@@ -44,6 +44,17 @@ class CoreField(models.Model):
     is_active = models.BooleanField(default=True)
     is_mandatory = models.BooleanField(default=True)
     visible_on_create = models.BooleanField(default=True)
+    term_set = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        validators=[
+            RegexValidator(
+                regex='^[A-Za-z0-9\s]*$',
+                message='Term Set can only contain alphanumeric characters and spaces'
+            )
+        ]
+    )
 
     def save(self, *args, **kwargs):
         # Special handling for Title and Topic fields
@@ -55,6 +66,12 @@ class CoreField(models.Model):
             self.field_type = 'text'
             if not self.description:
                 self.description = "Summarise the issue and context into a concise sentence. This will appear in the final briefing pack and the Dashboard record entry."
+        elif self.name == 'ABCRequestFrom':
+            self.field_type = 'radio'
+            if not self.display_name:
+                self.display_name = "Requested by"
+            if not self.term_set:
+                self.term_set = "Request From"
         super().save(*args, **kwargs)
 
     def __str__(self):

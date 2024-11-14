@@ -134,6 +134,18 @@ def create_record_type(request):
                     visible_on_create=False  # Synced with is_active
                 )
                 
+                # Add the new Request From field
+                CoreField.objects.create(
+                    record_type=new_record_type,
+                    name='ABCRequestFrom',
+                    display_name='Requested by',
+                    field_type='radio',
+                    term_set='Request From',
+                    is_active=False,
+                    is_mandatory=False,
+                    visible_on_create=False
+                )
+                
                 # Create default roles
                 default_roles = [
                     {
@@ -374,13 +386,13 @@ def edit_core_field(request, record_type, field_name):
         if display_name:
             core_field.display_name = display_name
             
-            # Handle description for title and topic fields
-            if field_name in ['title', 'ABCTopicSummary']:
+            # Handle description for title, topic, and request from fields
+            if field_name in ['title', 'ABCTopicSummary', 'ABCRequestFrom']:
                 if description:
                     core_field.description = description
                     
-            # Handle additional fields for Topic field
-            if field_name == 'ABCTopicSummary':
+            # Handle additional fields for Topic and Request From fields
+            if field_name in ['ABCTopicSummary', 'ABCRequestFrom']:
                 is_active = request.POST.get('is_active') == 'on'
                 is_mandatory = request.POST.get('is_mandatory') == 'on'
                 
@@ -392,6 +404,12 @@ def edit_core_field(request, record_type, field_name):
                 core_field.is_active = is_active
                 core_field.visible_on_create = is_active  # Sync with is_active
                 core_field.is_mandatory = is_mandatory
+                
+                # Handle term_set for ABCRequestFrom
+                if field_name == 'ABCRequestFrom':
+                    term_set = request.POST.get('term_set')
+                    if term_set:
+                        core_field.term_set = term_set
             
             core_field.save()
             messages.success(request, f'Core field "{field_name}" updated successfully.')

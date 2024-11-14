@@ -83,10 +83,27 @@ def export_record_fields(record_type_obj, custom_fields, roles, core_fields):
                 "IsActive": field.is_active,
                 "IsRequired": field.is_mandatory,
                 "IsNotRequiredOnCreation": not field.visible_on_create,
-                "NotEditable": False,
+                "NotEditable": not field.is_active,
                 "Order": 1,
                 "ShowInHeader": False,
                 "WizardPosition": 0
+            }
+        elif field.name == 'ABCRequestFrom':
+            field_data = {
+                "PartitionKey": record_type_obj.name,
+                "RowKey": field.name,
+                "DisplayName": field.display_name,
+                "Description": field.description or "",
+                "FieldType": 10,
+                "FiledType": 10,
+                "IsActive": field.is_active,
+                "IsRequired": field.is_mandatory,
+                "IsNotRequiredOnCreation": not field.visible_on_create,
+                "NotEditable": not field.is_active,
+                "Order": 2,
+                "ShowInHeader": False,
+                "WizardPosition": 0,
+                "DataSourceName": field.term_set
             }
         else:
             field_data = {
