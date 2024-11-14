@@ -155,6 +155,74 @@ def export_record_fields(record_type_obj, custom_fields, roles, core_fields):
                 "WizardPosition": 0,
                 "DataSourceName": field.term_set
             }
+        elif field.name == 'ABCOrgLevel1':
+            field_data = {
+                "PartitionKey": record_type_obj.name,
+                "RowKey": field.name,
+                "DisplayName": field.display_name,
+                "Description": field.description,
+                "FieldType": 2,  # dropdown_single
+                "FiledType": 2,
+                "IsActive": field.is_active,
+                "IsRequired": field.is_mandatory,
+                "IsNotRequiredOnCreation": not field.visible_on_create,
+                "NotEditable": not field.is_active,
+                "Order": 6,  # After ABCDecisionCategory
+                "ShowInHeader": False,
+                "WizardPosition": 0,
+                "DataSourceName": field.term_set or ""
+            }
+        elif field.name == 'ABCOrgLevel2':
+            field_data = {
+                "PartitionKey": record_type_obj.name,
+                "RowKey": field.name,
+                "DisplayName": field.display_name,
+                "Description": field.description,
+                "FieldType": 2,  # dropdown_single
+                "FiledType": 2,
+                "IsActive": field.is_active,
+                "IsRequired": field.is_mandatory,
+                "IsNotRequiredOnCreation": not field.visible_on_create,
+                "NotEditable": not field.is_active,
+                "Order": 7,  # After ABCOrgLevel1
+                "ShowInHeader": False,
+                "WizardPosition": 0,
+                "DataSourceName": field.term_set or ""
+            }
+        elif field.name == 'ABCOrgLevel3':
+            field_data = {
+                "PartitionKey": record_type_obj.name,
+                "RowKey": field.name,
+                "DisplayName": field.display_name,
+                "Description": field.description,
+                "FieldType": 2,  # dropdown_single
+                "FiledType": 2,
+                "IsActive": field.is_active,
+                "IsRequired": field.is_mandatory,
+                "IsNotRequiredOnCreation": not field.visible_on_create,
+                "NotEditable": not field.is_active,
+                "Order": 8,  # After ABCOrgLevel2
+                "ShowInHeader": False,
+                "WizardPosition": 0,
+                "DataSourceName": field.term_set or ""
+            }
+        elif field.name == 'ABCOrgLevel4':
+            field_data = {
+                "PartitionKey": record_type_obj.name,
+                "RowKey": field.name,
+                "DisplayName": field.display_name,
+                "Description": field.description,
+                "FieldType": 2,  # dropdown_single
+                "FiledType": 2,
+                "IsActive": field.is_active,
+                "IsRequired": field.is_mandatory,
+                "IsNotRequiredOnCreation": not field.visible_on_create,
+                "NotEditable": not field.is_active,
+                "Order": 9,  # After ABCOrgLevel3
+                "ShowInHeader": False,
+                "WizardPosition": 0,
+                "DataSourceName": field.term_set or ""
+            }
         else:
             field_data = {
                 "PartitionKey": record_type_obj.name,

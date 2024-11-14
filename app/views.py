@@ -183,6 +183,54 @@ def create_record_type(request):
                     visible_on_create=False
                 )
                 
+                # Add ABCOrgLevel1
+                CoreField.objects.create(
+                    record_type=new_record_type,
+                    name='ABCOrgLevel1',
+                    display_name='Organisation',
+                    field_type='dropdown_single',
+                    description="Select the organisation that will prepare the record.",
+                    is_active=True,
+                    is_mandatory=True,
+                    visible_on_create=True
+                )
+                
+                # Add ABCOrgLevel2
+                CoreField.objects.create(
+                    record_type=new_record_type,
+                    name='ABCOrgLevel2',
+                    display_name='Organisation level 1',
+                    field_type='dropdown_single',
+                    description="Select the relevant group or division (e.g. Economic Policy and State Productivity).",
+                    is_active=True,
+                    is_mandatory=True,
+                    visible_on_create=True
+                )
+                
+                # Add ABCOrgLevel3
+                CoreField.objects.create(
+                    record_type=new_record_type,
+                    name='ABCOrgLevel3',
+                    display_name='Organisation level 2',
+                    field_type='dropdown_single',
+                    description="Select the relevant branch (e.g. Cabinet Office).",
+                    is_active=False,
+                    is_mandatory=False,
+                    visible_on_create=False
+                )
+                
+                # Add ABCOrgLevel4
+                CoreField.objects.create(
+                    record_type=new_record_type,
+                    name='ABCOrgLevel4',
+                    display_name='Organisation level 3',
+                    field_type='dropdown_single',
+                    description="Select the relevant team (e.g. People and Culture).",
+                    is_active=False,
+                    is_mandatory=False,
+                    visible_on_create=False
+                )
+                
                 # Create default roles
                 default_roles = [
                     {
@@ -424,11 +472,14 @@ def edit_core_field(request, record_type, field_name):
             core_field.display_name = display_name
             
             # Handle description for all editable fields
-            if field_name in ['title', 'ABCTopicSummary', 'ABCRequestFrom', 'ABCDateRequested', 'ABCTimeframe', 'ABCDecisionCategory']:
+            if field_name in ['title', 'ABCTopicSummary', 'ABCRequestFrom', 'ABCDateRequested', 
+                            'ABCTimeframe', 'ABCDecisionCategory', 'ABCOrgLevel1', 'ABCOrgLevel2',
+                            'ABCOrgLevel3', 'ABCOrgLevel4']:
                 core_field.description = description
                     
-            # Handle additional fields for Topic, Request From, Date Requested, Timeframe, and Decision Category fields
-            if field_name in ['ABCTopicSummary', 'ABCRequestFrom', 'ABCDateRequested', 'ABCTimeframe', 'ABCDecisionCategory']:
+            # Handle additional fields for Topic, Request From, Date Requested, Timeframe, Decision Category, and Org Level 3/4
+            if field_name in ['ABCTopicSummary', 'ABCRequestFrom', 'ABCDateRequested', 'ABCTimeframe', 
+                            'ABCDecisionCategory', 'ABCOrgLevel3', 'ABCOrgLevel4']:
                 is_active = request.POST.get('is_active') == 'on'
                 is_mandatory = request.POST.get('is_mandatory') == 'on'
                 

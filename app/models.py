@@ -92,6 +92,34 @@ class CoreField(models.Model):
                 self.description = "Select based on who the Decision Maker is."
             if not self.term_set:
                 self.term_set = "Decision Category"
+        elif self.name == 'ABCOrgLevel1':
+            self.field_type = 'dropdown_single'
+            if not self.display_name:
+                self.display_name = "Organisation"
+            if not self.description:
+                self.description = "Select the organisation that will prepare the record."
+            self.is_active = True
+            self.is_mandatory = True
+        elif self.name == 'ABCOrgLevel2':
+            self.field_type = 'dropdown_single'
+            if not self.display_name:
+                self.display_name = "Organisation level 1"
+            if not self.description:
+                self.description = "Select the relevant group or division (e.g. Economic Policy and State Productivity)."
+            self.is_active = True
+            self.is_mandatory = True
+        elif self.name == 'ABCOrgLevel3':
+            self.field_type = 'dropdown_single'
+            if not self.display_name:
+                self.display_name = "Organisation level 2"
+            if not self.description:
+                self.description = "Select the relevant branch (e.g. Cabinet Office)."
+        elif self.name == 'ABCOrgLevel4':
+            self.field_type = 'dropdown_single'
+            if not self.display_name:
+                self.display_name = "Organisation level 3"
+            if not self.description:
+                self.description = "Select the relevant team (e.g. People and Culture)."
         super().save(*args, **kwargs)
 
     def __str__(self):
