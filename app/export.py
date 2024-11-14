@@ -248,6 +248,10 @@ def export_record_fields(record_type_obj, custom_fields, roles, core_fields):
     
     # Handle roles
     for role in roles:
+        not_required_on_create = True
+        if role.name in ['ABCInitiator', 'ABCDecisionMaker']:
+            not_required_on_create = False
+            
         field_data = {
             "PartitionKey": record_type_obj.name,
             "RowKey": role.name,
@@ -257,7 +261,7 @@ def export_record_fields(record_type_obj, custom_fields, roles, core_fields):
             "FiledType": 8 if role.allow_multiple else 4,
             "IsActive": role.is_active,
             "IsRequired": role.is_mandatory,
-            "IsNotRequiredOnCreation": False,
+            "IsNotRequiredOnCreation": not_required_on_create,
             "NotEditable": False,
             "Order": role.order,
             "ShowInHeader": False,

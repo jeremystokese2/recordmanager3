@@ -234,34 +234,39 @@ def create_record_type(request):
                 # Create default roles
                 default_roles = [
                     {
-                        'name': 'Initiator',
+                        'name': 'ABCInitiator',
                         'display_name': 'Initiator',
                         'stage': 'Initiate',
-                        'description': 'Creates and submits the record'
+                        'description': 'Mandatory role who initiates records and sends it to an Allocator or Accountable Executive Officer for action. Anyone can initiate a record.',
+                        'is_mandatory': True
                     },
                     {
-                        'name': 'Reviewer',
-                        'display_name': 'Reviewer',
+                        'name': 'ABCLeadAuthor',
+                        'display_name': 'Lead Author',
                         'stage': 'Prepare and Review',
-                        'description': 'Reviews the record details'
+                        'description': 'Mandatory role who prepares the record\'s content and coordinates input from Collaborators and Liaisons. They\'re subject matter experts, such as a Policy Officer or Project Manager.',
+                        'is_mandatory': True
                     },
                     {
-                        'name': 'Recommender',
+                        'name': 'ABCRecommendRecommender',
                         'display_name': 'Recommender',
                         'stage': 'Recommend',
-                        'description': 'Makes recommendations'
+                        'description': 'Mandatory role who recommends if the record should proceed. For Ministerial records the Recommender is the relevant Deputy Secretary. For all other records it is the relevant line executive.',
+                        'is_mandatory': True
                     },
                     {
-                        'name': 'Decider',
+                        'name': 'ABCDecisionMaker',
                         'display_name': 'Decision Maker',
                         'stage': 'Make Decision',
-                        'description': 'Makes the final decision'
+                        'description': 'Mandatory role who makes the final decision on the record.',
+                        'is_mandatory': True
                     },
                     {
-                        'name': 'Completer',
+                        'name': 'ABCCompleter',
                         'display_name': 'Completer',
                         'stage': 'Implement and Close',
-                        'description': 'Implements the decision and closes the record'
+                        'description': 'Mandatory role who marks the record as closed. Usually a person from the responsible branch, such as an Executive Assistant or Lead Author.',
+                        'is_mandatory': True
                     }
                 ]
                 
@@ -272,7 +277,8 @@ def create_record_type(request):
                         display_name=role_data['display_name'],
                         description=role_data['description'],
                         stage=stages[role_data['stage']],
-                        order=i
+                        order=i,
+                        is_mandatory=role_data['is_mandatory']
                     )
 
                 messages.success(request, f'Record type "{record_type}" created successfully!')
