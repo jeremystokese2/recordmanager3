@@ -28,12 +28,34 @@
                 <a href="{% url 'new_custom_field' record_type=record_type.name %}" class="btn btn-primary me-2">
                     Add Field
                 </a>
-                <a href="{% url 'export_fields' record_type=record_type.name %}" class="btn btn-secondary me-2">
-                    Export Fields
-                </a>
-                <a href="{% url 'export_record_types' %}?record_type={{ record_type.name }}" class="btn btn-secondary">
-                    Export Record Type
-                </a>
+                
+                <!-- Export Fields Split Button -->
+                <div class="btn-group me-2">
+                    <a href="{% url 'export_fields' record_type=record_type.name %}" class="btn btn-secondary">
+                        Export Fields
+                    </a>
+                    <button type="button" class="btn btn-secondary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+                        <span class="visually-hidden">Toggle Export Fields Format</span>
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="{% url 'export_fields' record_type=record_type.name %}?format=json">Export as JSON</a></li>
+                        <li><a class="dropdown-item" href="{% url 'export_fields' record_type=record_type.name %}?format=csv">Export as CSV</a></li>
+                    </ul>
+                </div>
+                
+                <!-- Export Record Type Split Button -->
+                <div class="btn-group">
+                    <a href="{% url 'export_record_types' %}?record_type={{ record_type.name }}" class="btn btn-secondary">
+                        Export Record Type
+                    </a>
+                    <button type="button" class="btn btn-secondary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+                        <span class="visually-hidden">Toggle Export Record Type Format</span>
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="{% url 'export_record_types' %}?record_type={{ record_type.name }}&format=json">Export as JSON</a></li>
+                        <li><a class="dropdown-item" href="{% url 'export_record_types' %}?record_type={{ record_type.name }}&format=csv">Export as CSV</a></li>
+                    </ul>
+                </div>
             </div>
         </div>
     </div>
@@ -272,9 +294,18 @@
 
     <!-- Add this where appropriate in your template -->
     {% if user.is_staff %}
-    <a href="{% url 'export_record_types' %}" class="btn btn-secondary">
-        Export Record Types
-    </a>
+    <div class="btn-group">
+        <a href="{% url 'export_record_types' %}" class="btn btn-secondary">
+            Export Record Types
+        </a>
+        <button type="button" class="btn btn-secondary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+            <span class="visually-hidden">Toggle Export Format</span>
+        </button>
+        <ul class="dropdown-menu">
+            <li><a class="dropdown-item" href="{% url 'export_record_types' %}?format=json">Export as JSON</a></li>
+            <li><a class="dropdown-item" href="{% url 'export_record_types' %}?format=csv">Export as CSV</a></li>
+        </ul>
+    </div>
     {% endif %}
 </div>
 

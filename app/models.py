@@ -31,10 +31,24 @@ class Stage(models.Model):
         return f"{self.record_type.name} - {self.name}"
 
 class CoreField(models.Model):
+    FIELD_TYPES = [
+        (1, 'text'),
+        (2, 'dropdown_single'),
+        (3, 'dropdown_multi'),
+        (4, 'single_user'),
+        (5, 'date'),
+        (6, 'time'),
+        (7, 'datetime'),
+        (8, 'multi_user'),
+        (9, 'textarea'),
+        (10, 'radio')
+    ]
+
     record_type = models.ForeignKey(RecordType, on_delete=models.CASCADE, related_name='core_fields')
     name = models.CharField(max_length=100)
+    sys_category = models.CharField(max_length=50, default='core', editable=False)
     display_name = models.CharField(max_length=100)
-    field_type = models.CharField(max_length=20)
+    field_type = models.IntegerField(choices=FIELD_TYPES)
     description = models.CharField(
         max_length=300, 
         blank=True,
@@ -44,6 +58,7 @@ class CoreField(models.Model):
     is_active = models.BooleanField(default=True)
     is_mandatory = models.BooleanField(default=True)
     visible_on_create = models.BooleanField(default=True)
+    order = models.IntegerField(default=0)
     term_set = models.CharField(
         max_length=100,
         blank=True,
@@ -56,70 +71,30 @@ class CoreField(models.Model):
         ]
     )
 
+    class Meta:
+        ordering = ['order', 'name']
+
     def save(self, *args, **kwargs):
-        # Special handling for Title and Topic fields
         if self.name == 'title':
-            self.field_type = 'text'
-            if not self.description:
-                self.description = "Capture the subject in a short, one line title. This will appear at the top of the briefing pack."
+            self.field_type = 1
         elif self.name == 'ABCTopicSummary':
-            self.field_type = 'text'
-            if not self.description:
-                self.description = "Summarise the issue and context into a concise sentence. This will appear in the final briefing pack and the Dashboard record entry."
+            self.field_type = 1
         elif self.name == 'ABCRequestFrom':
-            self.field_type = 'radio'
-            if not self.display_name:
-                self.display_name = "Requested by"
-            if not self.term_set:
-                self.term_set = "Request From"
+            self.field_type = 10
         elif self.name == 'ABCDateRequested':
-            self.field_type = 'date'
-            if not self.display_name:
-                self.display_name = "Date requested"
+            self.field_type = 5
         elif self.name == 'ABCTimeframe':
-            self.field_type = 'radio'
-            if not self.display_name:
-                self.display_name = "Timeframe"
-            if not self.description:
-                self.description = "Due dates populate automatically based on the timeframe you select. They can be edited anytime."
-            if not self.term_set:
-                self.term_set = "Timeframe"
+            self.field_type = 10
         elif self.name == 'ABCDecisionCategory':
-            self.field_type = 'dropdown_single'
-            if not self.display_name:
-                self.display_name = "Decision Category"
-            if not self.description:
-                self.description = "Select based on who the Decision Maker is."
-            if not self.term_set:
-                self.term_set = "Decision Category"
+            self.field_type = 2
         elif self.name == 'ABCOrgLevel1':
-            self.field_type = 'dropdown_single'
-            if not self.display_name:
-                self.display_name = "Organisation"
-            if not self.description:
-                self.description = "Select the organisation that will prepare the record."
-            self.is_active = True
-            self.is_mandatory = True
+            self.field_type = 1 # these fields have special rules. should always be 1
         elif self.name == 'ABCOrgLevel2':
-            self.field_type = 'dropdown_single'
-            if not self.display_name:
-                self.display_name = "Organisation level 1"
-            if not self.description:
-                self.description = "Select the relevant group or division (e.g. Economic Policy and State Productivity)."
-            self.is_active = True
-            self.is_mandatory = True
+            self.field_type = 1 # these fields have special rules. should always be 1
         elif self.name == 'ABCOrgLevel3':
-            self.field_type = 'dropdown_single'
-            if not self.display_name:
-                self.display_name = "Organisation level 2"
-            if not self.description:
-                self.description = "Select the relevant branch (e.g. Cabinet Office)."
+            self.field_type = 1 # these fields have special rules. should always be 1
         elif self.name == 'ABCOrgLevel4':
-            self.field_type = 'dropdown_single'
-            if not self.display_name:
-                self.display_name = "Organisation level 3"
-            if not self.description:
-                self.description = "Select the relevant team (e.g. People and Culture)."
+            self.field_type = 1 # these fields have special rules. should always be 1
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -146,6 +121,7 @@ class CustomField(models.Model):
 
     record_type = models.ForeignKey(RecordType, on_delete=models.CASCADE, related_name='custom_fields')
     name = models.CharField(max_length=100)
+    sys_category = models.CharField(max_length=50, default='custom', editable=False)
     display_name = models.CharField(max_length=100, default='')
     field_type = models.IntegerField(choices=FIELD_TYPES)
     description = models.CharField(

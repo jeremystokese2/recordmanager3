@@ -31,7 +31,7 @@ def export_record_types(selected_types: List[str] = None) -> str:
             ("odata.id", f"https://briefconnectabcsa.table.core.windows.net/RecordTypes(PartitionKey='V1',RowKey='{record.name}')"),
             ("odata.editLink", f"RecordTypes(PartitionKey='V1',RowKey='{record.name}')"),
             ("PartitionKey", "V1"),
-            ("RowKey", record.name),
+            ("RowKey", f"{record.name} ({record.prefix})"),
             ("Category", record.category),
             ("Color", record.colour),
             ("IsActive", record.is_enabled),
@@ -56,194 +56,70 @@ def export_record_fields(record_type_obj, custom_fields, roles, core_fields):
     
     # Handle core fields
     for field in core_fields:
-        if field.name == 'title':
-            field_data = {
-                "PartitionKey": record_type_obj.name,
-                "RowKey": field.name,
-                "DisplayName": field.display_name,
-                "Description": field.description,
-                "FieldType": 1,
-                "FiledType": 1,
-                "IsActive": True,
-                "IsRequired": True,
-                "IsNotRequiredOnCreation": False,
-                "NotEditable": False,
-                "Order": 0,
-                "ShowInHeader": False,
-                "WizardPosition": 0
-            }
-        elif field.name == 'ABCTopicSummary':
-            field_data = {
-                "PartitionKey": record_type_obj.name,
-                "RowKey": field.name,
-                "DisplayName": field.display_name,
-                "Description": field.description,
-                "FieldType": 1,
-                "FiledType": 1,
-                "IsActive": field.is_active,
-                "IsRequired": field.is_mandatory,
-                "IsNotRequiredOnCreation": not field.visible_on_create,
-                "NotEditable": not field.is_active,
-                "Order": 1,
-                "ShowInHeader": False,
-                "WizardPosition": 0
-            }
-        elif field.name == 'ABCRequestFrom':
-            field_data = {
-                "PartitionKey": record_type_obj.name,
-                "RowKey": field.name,
-                "DisplayName": field.display_name,
-                "Description": field.description or "",
-                "FieldType": 10,
-                "FiledType": 10,
-                "IsActive": field.is_active,
-                "IsRequired": field.is_mandatory,
-                "IsNotRequiredOnCreation": not field.visible_on_create,
-                "NotEditable": not field.is_active,
-                "Order": 2,
-                "ShowInHeader": False,
-                "WizardPosition": 0,
-                "DataSourceName": field.term_set
-            }
-        elif field.name == 'ABCDateRequested':
-            field_data = {
-                "PartitionKey": record_type_obj.name,
-                "RowKey": field.name,
-                "DisplayName": field.display_name,
-                "Description": field.description or "",
-                "FieldType": 5,
-                "FiledType": 5,
-                "IsActive": field.is_active,
-                "IsRequired": field.is_mandatory,
-                "IsNotRequiredOnCreation": not field.visible_on_create,
-                "NotEditable": not field.is_active,
-                "Order": 3,
-                "ShowInHeader": False,
-                "WizardPosition": 0
-            }
-        elif field.name == 'ABCTimeframe':
-            field_data = {
-                "PartitionKey": record_type_obj.name,
-                "RowKey": field.name,
-                "DisplayName": field.display_name,
-                "Description": field.description or "",
-                "FieldType": 10,  # radio type
-                "FiledType": 10,
-                "IsActive": field.is_active,
-                "IsRequired": field.is_mandatory,
-                "IsNotRequiredOnCreation": not field.visible_on_create,
-                "NotEditable": not field.is_active,
-                "Order": 4,  # After ABCDateRequested
-                "ShowInHeader": False,
-                "WizardPosition": 0,
-                "DataSourceName": field.term_set
-            }
-        elif field.name == 'ABCDecisionCategory':
-            field_data = {
-                "PartitionKey": record_type_obj.name,
-                "RowKey": field.name,
-                "DisplayName": field.display_name,
-                "Description": field.description or "",
-                "FieldType": 2,  # single select dropdown
-                "FiledType": 2,
-                "IsActive": field.is_active,
-                "IsRequired": field.is_mandatory,
-                "IsNotRequiredOnCreation": not field.visible_on_create,
-                "NotEditable": not field.is_active,
-                "Order": 5,  # After ABCTimeframe
-                "ShowInHeader": False,
-                "WizardPosition": 0,
-                "DataSourceName": field.term_set
-            }
-        elif field.name == 'ABCOrgLevel1':
-            field_data = {
-                "PartitionKey": record_type_obj.name,
-                "RowKey": field.name,
-                "DisplayName": field.display_name,
-                "Description": field.description,
-                "FieldType": 2,  # dropdown_single
-                "FiledType": 2,
-                "IsActive": field.is_active,
-                "IsRequired": field.is_mandatory,
-                "IsNotRequiredOnCreation": not field.visible_on_create,
-                "NotEditable": not field.is_active,
-                "Order": 6,  # After ABCDecisionCategory
-                "ShowInHeader": False,
-                "WizardPosition": 0,
-                "DataSourceName": field.term_set or ""
-            }
-        elif field.name == 'ABCOrgLevel2':
-            field_data = {
-                "PartitionKey": record_type_obj.name,
-                "RowKey": field.name,
-                "DisplayName": field.display_name,
-                "Description": field.description,
-                "FieldType": 2,  # dropdown_single
-                "FiledType": 2,
-                "IsActive": field.is_active,
-                "IsRequired": field.is_mandatory,
-                "IsNotRequiredOnCreation": not field.visible_on_create,
-                "NotEditable": not field.is_active,
-                "Order": 7,  # After ABCOrgLevel1
-                "ShowInHeader": False,
-                "WizardPosition": 0,
-                "DataSourceName": field.term_set or ""
-            }
-        elif field.name == 'ABCOrgLevel3':
-            field_data = {
-                "PartitionKey": record_type_obj.name,
-                "RowKey": field.name,
-                "DisplayName": field.display_name,
-                "Description": field.description,
-                "FieldType": 2,  # dropdown_single
-                "FiledType": 2,
-                "IsActive": field.is_active,
-                "IsRequired": field.is_mandatory,
-                "IsNotRequiredOnCreation": not field.visible_on_create,
-                "NotEditable": not field.is_active,
-                "Order": 8,  # After ABCOrgLevel2
-                "ShowInHeader": False,
-                "WizardPosition": 0,
-                "DataSourceName": field.term_set or ""
-            }
-        elif field.name == 'ABCOrgLevel4':
-            field_data = {
-                "PartitionKey": record_type_obj.name,
-                "RowKey": field.name,
-                "DisplayName": field.display_name,
-                "Description": field.description,
-                "FieldType": 2,  # dropdown_single
-                "FiledType": 2,
-                "IsActive": field.is_active,
-                "IsRequired": field.is_mandatory,
-                "IsNotRequiredOnCreation": not field.visible_on_create,
-                "NotEditable": not field.is_active,
-                "Order": 9,  # After ABCOrgLevel3
-                "ShowInHeader": False,
-                "WizardPosition": 0,
-                "DataSourceName": field.term_set or ""
-            }
-        else:
-            field_data = {
-                "PartitionKey": record_type_obj.name,
-                "RowKey": field.name,
-                "DisplayName": field.display_name,
-                "Description": field.description or "",
-                "FieldType": field.field_type,
-                "FiledType": field.field_type,
-                "IsActive": field.is_active,
-                "IsRequired": field.is_mandatory,
-                "IsNotRequiredOnCreation": not field.visible_on_create,
-                "NotEditable": False,
-                "Order": field.order,
-                "ShowInHeader": field.show_in_header,
-                "WizardPosition": field.wizard_position,
-            }
+        # Map field types according to VALID_FIELD_TYPES
+        field_type_map = {
+            'text': 1,
+            'dropdown_single': 2,
+            'dropdown_multi': 3,
+            'single_user': 4,
+            'date': 5,
+            'time': 6,
+            'datetime': 7,
+            'multi_user': 8,
+            'textarea': 9,
+            'radio': 10
+        }
         
-        # Check if field needs DataSourceName
-        if field.field_type in [2, 3, 10]:  # dropdown_single, dropdown_multi, radio
-            field_data["DataSourceName"] = field.term_set
+        # Get the numeric field type
+        field_type_num = field_type_map.get(field.get_field_type_display(), 1)  # Default to 1 (text) if not found
+        
+        field_data = {
+            "PartitionKey": record_type_obj.name,
+            "RowKey": field.name,
+            "DisplayName": field.display_name,
+            "Description": field.description or "",
+            "FieldType": field_type_num,  # Use numeric value
+            "FiledType": field_type_num,  # Use numeric value
+            "IsActive": field.is_active,
+            "IsRequired": field.is_mandatory,
+            "IsNotRequiredOnCreation": not field.visible_on_create,
+            "NotEditable": not field.is_active,
+            "Order": field.order,
+            "ShowInHeader": False,
+            "WizardPosition": 0,
+            "DataSourceName": field.term_set or "",
+            "SysCategory": "core"
+        }
+        
+        # Special handling for specific core fields that need term sets
+        if field.name == 'ABCRequestFrom':
+            field_data["DataSourceName"] = "Request From"
+        elif field.name == 'ABCTimeframe':
+            field_data["DataSourceName"] = "Timeframe"
+        elif field.name == 'ABCDecisionCategory':
+            field_data["DataSourceName"] = "Decision Category"
             
+        export_data.append(field_data)
+    
+    # Handle custom fields
+    for field in custom_fields:
+        field_data = {
+            "PartitionKey": record_type_obj.name,
+            "RowKey": field.name,
+            "DisplayName": field.display_name,
+            "Description": field.description or "",
+            "FieldType": field.field_type,
+            "FiledType": field.field_type,
+            "IsActive": field.is_active,
+            "IsRequired": field.is_mandatory,
+            "IsNotRequiredOnCreation": not field.visible_on_create,
+            "NotEditable": not field.is_active,
+            "Order": field.order,
+            "ShowInHeader": field.show_in_header,
+            "WizardPosition": field.wizard_position,
+            "DataSourceName": field.term_set or "",
+            "SysCategory": "custom"
+        }
         export_data.append(field_data)
     
     # Handle roles

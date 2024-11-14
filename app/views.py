@@ -19,6 +19,8 @@ from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_protect
 from datetime import datetime
 import logging
+import csv
+from io import StringIO
 
 from .utils.record_type_validator import (
     test_validate_record_type_from_json,
@@ -98,6 +100,20 @@ def create_record_type(request):
                     correspondence_mandatory=correspondence_mandatory
                 )
                 
+                # Map string field types to their corresponding integer values
+                field_type_map = {
+                    'text': 1,
+                    'dropdown_single': 2,
+                    'dropdown_multi': 3,
+                    'single_user': 4,
+                    'date': 5,
+                    'time': 6,
+                    'datetime': 7,
+                    'multi_user': 8,
+                    'textarea': 9,
+                    'radio': 10
+                }
+                
                 # Create default stages
                 default_stages = [
                     'Initiate',
@@ -115,12 +131,12 @@ def create_record_type(request):
                         order=i
                     )
                 
-                # Create default core fields
+                # Create default core fields with correct field_type mapping
                 CoreField.objects.create(
                     record_type=new_record_type,
-                    name='title',
+                    name='Title',
                     display_name='Title',
-                    field_type='text'
+                    field_type=field_type_map['text']
                 )
                 
                 # Add the new Topic field
@@ -128,7 +144,7 @@ def create_record_type(request):
                     record_type=new_record_type,
                     name='ABCTopicSummary',
                     display_name='Topic',
-                    field_type='text',
+                    field_type=field_type_map['text'],
                     is_active=False,  # Hidden by default
                     is_mandatory=False,  # Not required
                     visible_on_create=False  # Synced with is_active
@@ -139,7 +155,7 @@ def create_record_type(request):
                     record_type=new_record_type,
                     name='ABCRequestFrom',
                     display_name='Requested by',
-                    field_type='radio',
+                    field_type=field_type_map['radio'],
                     term_set='Request From',
                     is_active=False,
                     is_mandatory=False,
@@ -151,7 +167,7 @@ def create_record_type(request):
                     record_type=new_record_type,
                     name='ABCDateRequested',
                     display_name='Date requested',
-                    field_type='date',
+                    field_type=field_type_map['date'],
                     is_active=False,  # Hidden by default
                     is_mandatory=False,  # Not required
                     visible_on_create=False  # Synced with is_active
@@ -162,7 +178,7 @@ def create_record_type(request):
                     record_type=new_record_type,
                     name='ABCTimeframe',
                     display_name='Timeframe',
-                    field_type='radio',
+                    field_type=field_type_map['radio'],
                     description="Due dates populate automatically based on the timeframe you select. They can be edited anytime.",
                     term_set='Timeframe',
                     is_active=False,
@@ -175,7 +191,7 @@ def create_record_type(request):
                     record_type=new_record_type,
                     name='ABCDecisionCategory',
                     display_name='Decision Category',
-                    field_type='dropdown_single',
+                    field_type=field_type_map['dropdown_single'],
                     description="Select based on who the Decision Maker is.",
                     term_set='Decision Category',
                     is_active=False,
@@ -188,9 +204,9 @@ def create_record_type(request):
                     record_type=new_record_type,
                     name='ABCOrgLevel1',
                     display_name='Organisation',
-                    field_type='dropdown_single',
+                    field_type=field_type_map['dropdown_single'],
                     description="Select the organisation that will prepare the record.",
-                    is_active=True,
+                    is_active=False,
                     is_mandatory=True,
                     visible_on_create=True
                 )
@@ -200,9 +216,9 @@ def create_record_type(request):
                     record_type=new_record_type,
                     name='ABCOrgLevel2',
                     display_name='Organisation level 1',
-                    field_type='dropdown_single',
+                    field_type=field_type_map['dropdown_single'],
                     description="Select the relevant group or division (e.g. Economic Policy and State Productivity).",
-                    is_active=True,
+                    is_active=False,
                     is_mandatory=True,
                     visible_on_create=True
                 )
@@ -212,7 +228,7 @@ def create_record_type(request):
                     record_type=new_record_type,
                     name='ABCOrgLevel3',
                     display_name='Organisation level 2',
-                    field_type='dropdown_single',
+                    field_type=field_type_map['dropdown_single'],
                     description="Select the relevant branch (e.g. Cabinet Office).",
                     is_active=False,
                     is_mandatory=False,
@@ -224,7 +240,7 @@ def create_record_type(request):
                     record_type=new_record_type,
                     name='ABCOrgLevel4',
                     display_name='Organisation level 3',
-                    field_type='dropdown_single',
+                    field_type=field_type_map['dropdown_single'],
                     description="Select the relevant team (e.g. People and Culture).",
                     is_active=False,
                     is_mandatory=False,
@@ -613,58 +629,131 @@ def edit_role(request, record_type, role_id):
 
 def export_record_types(request):
     """View to handle record type export"""
-    # If coming from record_fields page, get the single record type
     single_record_type = request.GET.get('record_type')
+    export_format = request.GET.get('format', 'json')  # Default to JSON
+    
     if single_record_type:
         selected_types = [single_record_type]
     else:
-        # Otherwise get selected types from the home page
         selected_types = request.GET.getlist('types[]')
     
-    # Create a temporary file
-    with tempfile.NamedTemporaryFile(delete=False, suffix='.json') as tmp_file:
-        filename = tmp_file.name
+    if export_format == 'csv':
+        # Create CSV response
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="record_types_export.csv"'
         
-        # Generate the export data with selected types
-        export_data = export.export_record_types(selected_types if selected_types else None)
+        writer = csv.writer(response)
+        # Write headers
+        writer.writerow(['PartitionKey', 'RowKey', 'Category', 'Color', 'IsActive', 
+                        'IsCorrespondenceType', 'Order', 'Prefix', 'StagesJson'])
         
-        # Copy the export data to the temporary file
-        shutil.copy2(export_data, filename)
+        # Get record types data
+        record_types = RecordType.objects.filter(name__in=selected_types) if selected_types else RecordType.objects.all()
         
-        # Delete the original export file
-        os.remove(export_data)
-        
-        # Create the response with the temporary file
-        response = FileResponse(
-            open(filename, 'rb'),
-            content_type='application/json',
-            as_attachment=True,
-            filename='record_types_export.json'
-        )
-        
-        # Schedule the temporary file for deletion after the response is sent
-        response._resource_closers.append(lambda: os.remove(filename))
+        # Write data rows
+        for record in record_types:
+            stages_json = json.dumps([{
+                "Name": stage.name,
+                "Order": stage.order
+            } for stage in record.stages.all().order_by('order')])
+            
+            writer.writerow([
+                'V1',
+                record.name,
+                record.category,
+                record.colour,
+                record.is_enabled,
+                record.enable_correspondence,
+                record.order,
+                record.prefix,
+                stages_json
+            ])
         
         return response
+    else:
+        # Original JSON export logic
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.json') as tmp_file:
+            filename = tmp_file.name
+            export_data = export.export_record_types(selected_types if selected_types else None)
+            shutil.copy2(export_data, filename)
+            os.remove(export_data)
+            
+            response = FileResponse(
+                open(filename, 'rb'),
+                content_type='application/json',
+                as_attachment=True,
+                filename='record_types_export.json'
+            )
+            response._resource_closers.append(lambda: os.remove(filename))
+            return response
 
 def export_fields(request, record_type):
-    """Export record fields as JSON"""
+    """Export record fields as JSON or CSV"""
     record_type_obj = get_object_or_404(RecordType, name=record_type)
     fields = CustomField.objects.filter(record_type=record_type_obj)
     roles = Role.objects.filter(record_type=record_type_obj)
     core_fields = CoreField.objects.filter(record_type=record_type_obj)
+    export_format = request.GET.get('format', 'json')  # Default to JSON
     
-    # Combine all fields for export
-    export_data = export_record_fields(record_type_obj, fields, roles, core_fields)  # Pass record_type_obj instead of just record_type
-    
-    # Convert to JSON
-    json_data = json.dumps(export_data, indent=2)
-    
-    # Create the response
-    response = HttpResponse(json_data, content_type='application/json')
-    response['Content-Disposition'] = f'attachment; filename="{record_type.lower().replace(" ", "_")}_fields.json"'
-    
-    return response
+    if export_format == 'csv':
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = f'attachment; filename="{record_type.lower().replace(" ", "_")}_fields.csv"'
+        
+        writer = csv.writer(response)
+        # Add SysCategory to headers
+        writer.writerow([
+            'PartitionKey', 
+            'RowKey', 
+            'DisplayName', 
+            'Description', 
+            'FieldType',
+            'FiledType',
+            'IsActive',
+            'IsRequired',
+            'IsNotRequiredOnCreation',
+            'NotEditable',
+            'Order',
+            'ShowInHeader',
+            'WizardPosition',
+            'DataSourceName',
+            'Stages',
+            'SysCategory'  # Added SysCategory
+        ])
+        
+        # Get export data
+        export_data = export_record_fields(record_type_obj, fields, roles, core_fields)
+        
+        # Write data rows
+        for field in export_data:
+            writer.writerow([
+                field.get('PartitionKey', ''),
+                field.get('RowKey', ''),
+                field.get('DisplayName', ''),
+                field.get('Description', ''),
+                field.get('FieldType', ''),
+                field.get('FiledType', ''),
+                field.get('IsActive', ''),
+                field.get('IsRequired', ''),
+                field.get('IsNotRequiredOnCreation', ''),
+                field.get('NotEditable', ''),
+                field.get('Order', ''),
+                field.get('ShowInHeader', ''),
+                field.get('WizardPosition', ''),
+                field.get('DataSourceName', ''),
+                field.get('Stages', ''),
+                field.get('SysCategory', '')  # Added SysCategory
+            ])
+        
+        return response
+    else:
+        # Original JSON export logic remains the same since export_record_fields will now include SysCategory
+        export_data = export_record_fields(record_type_obj, fields, roles, core_fields)
+        json_data = json.dumps(export_data, indent=2)
+        
+        response = HttpResponse(json_data, content_type='application/json')
+        response['Content-Disposition'] = f'attachment; filename="{record_type.lower().replace(" ", "_")}_fields.json"'
+        
+        return response
 
 def get_azure_table_service():
     """Helper function to get Azure Table Service client"""
