@@ -10,6 +10,12 @@
                     Export Selected
                 </button>
             </form>
+            <form id="deleteForm" action="{% url 'delete_record_types' %}" method="post" class="d-inline" onsubmit="return confirmDelete();">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger" id="deleteButton" disabled>
+                    Delete Selected
+                </button>
+            </form>
             <a href="{% url 'create_record_type' %}" class="btn btn-primary">Create Record Type</a>
         </div>
     </div>
@@ -45,7 +51,7 @@
                             <td>
                                 <input type="checkbox" class="form-check-input record-type-checkbox" 
                                        name="types[]" value="{{ record_type.name }}"
-                                       form="exportForm">
+                                       form="deleteForm">
                             </td>
                             <td>
                                 <a href="{% url 'record_fields' record_type=record_type.name %}">
@@ -82,32 +88,39 @@ document.addEventListener('DOMContentLoaded', function() {
     const selectAllCheckbox = document.getElementById('selectAll');
     const recordTypeCheckboxes = document.querySelectorAll('.record-type-checkbox');
     const exportButton = document.getElementById('exportButton');
+    const deleteButton = document.getElementById('deleteButton');
 
     // Handle "Select All" checkbox
     selectAllCheckbox.addEventListener('change', function() {
         recordTypeCheckboxes.forEach(checkbox => {
             checkbox.checked = this.checked;
         });
-        updateExportButton();
+        updateButtons();
     });
 
     // Handle individual checkboxes
     recordTypeCheckboxes.forEach(checkbox => {
         checkbox.addEventListener('change', function() {
-            updateExportButton();
+            updateButtons();
             // Update "Select All" if needed
             selectAllCheckbox.checked = Array.from(recordTypeCheckboxes)
                 .every(cb => cb.checked);
         });
     });
 
-    // Update export button state
-    function updateExportButton() {
+    // Update button states
+    function updateButtons() {
         const checkedCount = Array.from(recordTypeCheckboxes)
             .filter(cb => cb.checked).length;
         exportButton.disabled = checkedCount === 0;
+        deleteButton.disabled = checkedCount === 0;
         exportButton.textContent = `Export Selected (${checkedCount})`;
     }
 });
+
+// Confirmation for delete action
+function confirmDelete() {
+    return confirm('Are you sure you want to delete the selected record types?');
+}
 </script>
 {% endblock %}

@@ -659,7 +659,7 @@ def export_record_types(request):
             
             writer.writerow([
                 'V1',
-                record.name,
+                f"{record.name} ({record.prefix})",
                 record.category,
                 record.colour,
                 record.is_enabled,
@@ -726,7 +726,7 @@ def export_fields(request, record_type):
         # Write data rows
         for field in export_data:
             writer.writerow([
-                field.get('PartitionKey', ''),
+                f"{field.get('PartitionKey', '')} ({record_type_obj.prefix})",
                 field.get('RowKey', ''),
                 field.get('DisplayName', ''),
                 field.get('Description', ''),
@@ -979,3 +979,15 @@ def test_validation(request):
             return render(request, 'test_validation.html')
     
     return render(request, 'test_validation.html')
+
+def delete_record_types(request):
+    if request.method == 'POST':
+        record_type_names = request.POST.getlist('types[]')
+        if record_type_names:
+            for record_type_name in record_type_names:
+                record_type_obj = get_object_or_404(RecordType, name=record_type_name)
+                record_type_obj.delete()
+                messages.success(request, f'Record type "{record_type_name}" has been deleted successfully.')
+        else:
+            messages.error(request, 'No record types selected for deletion.')
+        return redirect('index')

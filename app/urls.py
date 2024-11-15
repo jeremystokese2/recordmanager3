@@ -24,7 +24,7 @@ urlpatterns = [
     # Put more specific patterns first
     path('record/create/', views.create_record_type, name='create_record_type'),
     path('record/<str:record_type>/edit/', views.edit_record_type, name='edit_record_type'),
-    path('record/<str:record_type>/delete/', views.delete_record_type, name='delete_record_type'),
+    path('record/delete/', views.delete_record_types, name='delete_record_types'),
     path('record/<str:record_type>/stages/', views.edit_stages, name='edit_stages'),
     path('record/<str:record_type>/fields/new/', views.new_custom_field, name='new_custom_field'),
     path('record/<str:record_type>/fields/<str:field_name>/edit/', views.edit_custom_field, name='edit_custom_field'),
