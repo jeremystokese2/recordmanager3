@@ -75,8 +75,8 @@
                 <div class="col-md-6">
                     <p>
                         <strong>Colour:</strong> 
-                        <span class="d-inline-block align-middle" style="width: 20px; height: 20px; background-color: '{{ record_type.colour }}'; border: 1px solid #dee2e6;"></span>
-                        {{ record_type.colour }}
+                        <span class="d-inline-block align-middle" style="width: 20px; height: 20px; background-color: {{ record_type.colour }}; border: 1px solid #dee2e6;"></span>
+                        <span style="color: {{ record_type.colour }}; font-weight: bold;">{{ record_type.colour }}</span>
                     </p>
                     <p>
                         <strong>Correspondence:</strong>

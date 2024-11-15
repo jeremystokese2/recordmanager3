@@ -93,7 +93,7 @@ def create_record_type(request):
                     name=record_type,
                     prefix=prefix,
                     description=description,
-                    colour=colour,
+                    colour=colour.replace('#', ''),
                     category=category,
                     order=order,
                     enable_correspondence=enable_correspondence,
