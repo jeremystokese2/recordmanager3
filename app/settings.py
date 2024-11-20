@@ -158,29 +158,25 @@ LOGGING = {
         },
     },
     'loggers': {
-        '': {  # Root logger
-            'handlers': ['console'],
-            'level': 'DEBUG',
-        },
         'django': {  # Django's logger
             'handlers': ['console'],
             'level': 'INFO',
-            'propagate': True,
+            'propagate': False,  # Don't propagate to root
         },
-        'django.server': {  # Server requests and responses
+        'django.server': {
             'handlers': ['console'],
             'level': 'DEBUG',
-            'propagate': True,
+            'propagate': False,  # Don't propagate to django
         },
-        'django.request': {  # Request/response logging
+        'django.request': {
             'handlers': ['console'],
             'level': 'DEBUG',
-            'propagate': True,
+            'propagate': False,  # Don't propagate to django
         },
-        'app': {  # Your app's logger
+        'app.utils': {  # Your app's utils logger
             'handlers': ['console'],
             'level': 'DEBUG',
-            'propagate': True,
+            'propagate': False,  # Don't propagate to app
         },
     },
 }

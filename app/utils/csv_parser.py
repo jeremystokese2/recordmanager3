@@ -29,8 +29,14 @@ def parse_csv_to_json(csv_file, file_type):
         else:
             csv_data = csv_file
 
-        # Read CSV into DataFrame with explicit encoding
-        df = pd.read_csv(csv_data, encoding='utf-8')
+        # Try reading with semicolon first, then comma if that fails
+        try:
+            df = pd.read_csv(csv_data, encoding='utf-8', sep=';')
+        except:
+            # Reset file pointer if needed
+            if hasattr(csv_data, 'seek'):
+                csv_data.seek(0)
+            df = pd.read_csv(csv_data, encoding='utf-8', sep=',')
         
         if df.empty:
             raise ValueError("CSV file is empty")
