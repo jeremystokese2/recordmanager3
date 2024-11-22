@@ -21,8 +21,24 @@ class RecordType(models.Model):
 
 class Stage(models.Model):
     record_type = models.ForeignKey(RecordType, on_delete=models.CASCADE, related_name='stages')
-    name = models.CharField(max_length=250)
+    name = models.CharField(
+        max_length=250,
+        validators=[
+            RegexValidator(
+                regex=r'^[A-Za-z0-9\s]{1,250}$',
+                message='Stage name must be alphanumeric characters and spaces only'
+            )
+        ]
+    )
     order = models.IntegerField()
+
+    @classmethod
+    def get_name_pattern(cls):
+        return '[A-Za-z0-9\\s]{1,250}'
+
+    @classmethod
+    def get_name_regex(cls):
+        return r'^[A-Za-z0-9\s]{1,250}$'
 
     class Meta:
         ordering = ['order']

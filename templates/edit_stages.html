@@ -45,7 +45,15 @@
         <ul class="list-group mb-3" id="stagesList">
             {% for stage in stages %}
                 <li class="list-group-item d-flex justify-content-between align-items-center">
-                    <input type="text" name="stages" value="{{ stage.name }}" class="form-control stage-input" {% if forloop.first or forloop.last %}readonly{% endif %} maxlength="250" pattern="[A-Za-z0-9\s]{1,250}" required title="Stage name must be alphanumeric characters and spaces only, up to 250 characters">
+                    <input type="text" 
+                           name="stages" 
+                           value="{{ stage.name }}" 
+                           class="form-control stage-input" 
+                           {% if forloop.first or forloop.last %}readonly{% endif %}
+                           maxlength="{{ stage_name_max_length }}"
+                           pattern="{{ stage_name_pattern }}"
+                           required 
+                           title="Stage name must be alphanumeric characters and spaces only, up to {{ stage_name_max_length }} characters">
                     <div class="btn-group ms-2" role="group">
                         {% if not forloop.first and not forloop.last %}
                             <button type="button" class="btn btn-sm btn-secondary move-up">↑</button>
@@ -65,8 +73,20 @@
 document.getElementById('addStage').addEventListener('click', function() {
     var li = document.createElement('li');
     li.className = 'list-group-item d-flex justify-content-between align-items-center';
+    
+    // Use the same validation rules as existing stages
+    var maxLength = "{{ stage_name_max_length }}";
+    var pattern = "{{ stage_name_pattern }}";
+    
     li.innerHTML = `
-        <input type="text" name="stages" value="New Stage" class="form-control stage-input" maxlength="50" pattern="[A-Za-z\s]{1,50}" required>
+        <input type="text" 
+               name="stages" 
+               value="New Stage" 
+               class="form-control stage-input" 
+               maxlength="${maxLength}"
+               pattern="${pattern}"
+               required
+               title="Stage name must be alphanumeric characters and spaces only, up to ${maxLength} characters">
         <div class="btn-group ms-2" role="group">
             <button type="button" class="btn btn-sm btn-secondary move-up">↑</button>
             <button type="button" class="btn btn-sm btn-secondary move-down">↓</button>
@@ -105,7 +125,12 @@ document.getElementById('stagesForm').addEventListener('submit', function(e) {
 
 document.querySelectorAll('.stage-input').forEach(function(input) {
     input.addEventListener('input', function() {
-        this.value = this.value.replace(/[^A-Za-z\s]/g, '');
+        // Create the RegExp object with the proper regex pattern
+        var pattern = new RegExp("{{ stage_name_regex|escapejs }}");
+        var value = this.value;
+        if (!pattern.test(value)) {
+            this.value = value.replace(/[^A-Za-z0-9\s]/g, '');
+        }
     });
 });
 </script>

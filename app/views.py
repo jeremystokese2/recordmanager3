@@ -436,7 +436,12 @@ def edit_record_type(request, record_type):
 
 def edit_stages(request, record_type):
     record_type_obj = get_object_or_404(RecordType, name=record_type)
-    error_data = None  # Changed from error_message
+    error_data = None
+    
+    # Get validation rules from Stage model
+    stage_name_max_length = Stage._meta.get_field('name').max_length
+    stage_name_pattern = Stage.get_name_pattern()
+    stage_name_regex = Stage.get_name_regex()
     
     if request.method == 'POST':
         new_stages_data = request.POST.getlist('stages')
@@ -479,7 +484,10 @@ def edit_stages(request, record_type):
     return render(request, 'edit_stages.html', {
         'record_type': record_type_obj,
         'stages': stages,
-        'error_data': error_data
+        'error_data': error_data,
+        'stage_name_max_length': stage_name_max_length,
+        'stage_name_pattern': stage_name_pattern,
+        'stage_name_regex': stage_name_regex,
     })
 
 def edit_core_field(request, record_type, field_name):
