@@ -21,7 +21,7 @@ class RecordType(models.Model):
 
 class Stage(models.Model):
     record_type = models.ForeignKey(RecordType, on_delete=models.CASCADE, related_name='stages')
-    name = models.CharField(max_length=50)
+    name = models.CharField(max_length=250)
     order = models.IntegerField()
 
     class Meta:
@@ -191,12 +191,3 @@ class Role(models.Model):
     
     def __str__(self):
         return f"{self.name} - {self.stage.name} - {self.record_type.name}"
-
-class Field(models.Model):
-    # Existing fields...
-    is_active = models.BooleanField(default=True)
-    stage = models.CharField(max_length=100)  # For role fields
-    term_set_name = models.CharField(max_length=100)  # For dropdown/combo fields
-    
-    # Add any missing fields that you want to track
-

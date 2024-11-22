@@ -192,6 +192,7 @@ ENV/
 # */migrations/*.pyc
 # !*/migrations/__init__.py
 .cursorrules
+.cursorignore
 
 # Logs
 logs/
